@@ -1,493 +1,241 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import {
+  DollarSign,
+  TrendingUp,
+  CreditCard,
+  RefreshCw,
+  Filter,
+  Download,
+  ArrowUpRight,
+  ArrowDownLeft,
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Banknote,
+} from "lucide-react";
+
+const fmt = (n) => new Intl.NumberFormat("vi-VN").format(n) + " ₫";
+
+const revenueData = {
+  totalEarnings: 45670000,
+  monthlyEarnings: 8450000,
+  monthlyGrowth: 12.5,
+  totalTransactions: 124,
+  pendingAmount: 2350000,
+  platformFeeRate: 10,
+  platformFee: 4567000,
+  netEarnings: 41103000,
+};
+
+const transactions = [
+  { id: "TXN-001", date: "15/06/2025", amount: 2500000, type: "booking", service: "Phòng Deluxe - Nguyễn Văn A", status: "completed" },
+  { id: "TXN-002", date: "14/06/2025", amount: 1200000, type: "booking", service: "City Tour - Trần Thị B", status: "completed" },
+  { id: "TXN-003", date: "13/06/2025", amount: 800000, type: "refund", service: "Hoàn tiền - Lê Văn C", status: "pending" },
+  { id: "TXN-004", date: "12/06/2025", amount: 4500000, type: "booking", service: "Phòng Suite - Phạm Thị D", status: "completed" },
+  { id: "TXN-005", date: "11/06/2025", amount: 1800000, type: "booking", service: "Gói Spa - Hoàng Văn E", status: "completed" },
+  { id: "TXN-006", date: "10/06/2025", amount: 3200000, type: "withdrawal", service: "Rút tiền về tài khoản ngân hàng", status: "completed" },
+];
+
+const reports = [
+  { id: 1, name: "Báo cáo thu nhập tháng 5/2025", type: "earnings", date: "01/06/2025", size: "2.4 MB" },
+  { id: 2, name: "Báo cáo hiệu suất Q1 2025", type: "performance", date: "01/04/2025", size: "5.1 MB" },
+  { id: 3, name: "Tổng hợp chi phí tháng 5/2025", type: "expenses", date: "01/06/2025", size: "1.8 MB" },
+  { id: 4, name: "Phân tích hoàn tiền Q1 2025", type: "refunds", date: "01/04/2025", size: "3.2 MB" },
+];
+
+const typeConfig = {
+  booking: { label: "Đặt chỗ", color: "bg-green-100 text-green-800", icon: ArrowDownLeft, iconColor: "text-green-500" },
+  refund: { label: "Hoàn tiền", color: "bg-orange-100 text-orange-800", icon: ArrowUpRight, iconColor: "text-orange-500" },
+  withdrawal: { label: "Rút tiền", color: "bg-blue-100 text-blue-800", icon: ArrowUpRight, iconColor: "text-blue-500" },
+};
+
+const reportTypeConfig = {
+  earnings: { label: "Thu nhập", color: "bg-green-100 text-green-800" },
+  performance: { label: "Hiệu suất", color: "bg-blue-100 text-blue-800" },
+  expenses: { label: "Chi phí", color: "bg-red-100 text-red-800" },
+  refunds: { label: "Hoàn tiền", color: "bg-orange-100 text-orange-800" },
+};
 
 const PartnerFinance = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
   const [selectedReport, setSelectedReport] = useState("earnings");
-
-  const revenueData = {
-    totalEarnings: 45250.75,
-    monthlyGrowth: 12.5,
-    totalTransactions: 1247,
-    pendingAmount: 2350.5,
-  };
-
-  const recentTransactions = [
-    {
-      id: "01",
-      date: "2025-06-15",
-      amount: 125.5,
-      type: "Phí dịch vụ",
-      status: "Đã hoàn thành",
-    },
-    {
-      id: "02",
-      date: "2025-06-14",
-      amount: 89.25,
-      type: "Phí dịch vụ",
-      status: "Đã hoàn thành",
-    },
-    {
-      id: "03",
-      date: "2025-06-13",
-      amount: 250.0,
-      type: "Hoàn tiền",
-      status: "Đang chờ",
-    },
-    {
-      id: "04",
-      date: "2025-06-12",
-      amount: 67.8,
-      type: "Phí dịch vụ",
-      status: "Đã hoàn thành",
-    },
-    {
-      id: "05",
-      date: "2025-06-11",
-      amount: 180.45,
-      type: "Phí dịch vụ",
-      status: "Đã hoàn thành",
-    },
-  ];
-
-  const reports = [
-    {
-      id: 1,
-      name: "Báo cáo thu nhập tháng 5/2025",
-      type: "earnings",
-      period: "monthly",
-      date: "2025-06-01",
-      size: "2.4 MB",
-    },
-    {
-      id: 2,
-      name: "Báo cáo hiệu suất Q1 2025",
-      type: "performance",
-      period: "quarterly",
-      date: "2025-04-01",
-      size: "5.1 MB",
-    },
-    {
-      id: 3,
-      name: "Tổng hợp chi phí tháng 5/2025",
-      type: "expenses",
-      period: "monthly",
-      date: "2025-06-01",
-      size: "1.8 MB",
-    },
-    {
-      id: 4,
-      name: "Phân tích hoàn tiền Q1 2025",
-      type: "refunds",
-      period: "quarterly",
-      date: "2025-04-01",
-      size: "3.2 MB",
-    },
-  ];
-
-  const StatCard = ({ title, value, change, icon: Icon, trend }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className="h-12 w-12 bg-gray-50 rounded-lg flex items-center justify-center">
-          <Icon className="h-6 w-6 text-gray-600" />
-        </div>
-      </div>
-      {change && (
-        <div className="mt-4 flex items-center">
-          {trend === "up" ? (
-            <svg
-              className="h-4 w-4 text-green-500 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 10l7-7m0 0l7 7m-7-7v18"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="h-4 w-4 text-red-500 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-              />
-            </svg>
-          )}
-          <span
-            className={`text-sm font-medium ${
-              trend === "up" ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {change}% so với tháng trước
-          </span>
-        </div>
-      )}
-    </div>
-  );
-
-  const TransactionRow = ({ transaction }) => (
-    <tr className="border-b border-gray-100 hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        {transaction.id}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        {transaction.date}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        {new Intl.NumberFormat("vi-VN", {
-          style: "currency",
-          currency: "VND",
-        }).format(transaction.amount)}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        {transaction.type}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            transaction.status === "Đã hoàn thành"
-              ? "bg-green-100 text-green-800"
-              : "bg-yellow-100 text-yellow-800"
-          }`}
-        >
-          {transaction.status}
-        </span>
-      </td>
-    </tr>
-  );
-
-  const ReportRow = ({ report }) => (
-    <tr className="border-b border-gray-100 hover:bg-gray-50">
-      <td className="px-6 py-4">
-        <div className="flex items-center">
-          <svg
-            className="h-5 w-5 text-gray-400 mr-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{report.name}</p>
-            <p className="text-xs text-gray-500">{report.size}</p>
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            report.type === "earnings"
-              ? "bg-green-100 text-green-800"
-              : report.type === "expenses"
-                ? "bg-red-100 text-red-800"
-                : report.type === "refunds"
-                  ? "bg-orange-100 text-orange-800"
-                  : "bg-blue-100 text-blue-800"
-          }`}
-        >
-          {report.type === "earnings"
-            ? "Thu nhập"
-            : report.type === "expenses"
-              ? "Chi phí"
-              : report.type === "refunds"
-                ? "Hoàn tiền"
-                : "Hiệu suất"}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        {report.date}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button className="text-[#008fa0] hover:text-[#007a8a] mr-3">
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-            />
-          </svg>
-        </button>
-        <button className="text-[#008fa0] hover:text-[#007a8a]">
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
-        </button>
-      </td>
-    </tr>
-  );
-
-  // Icon components using Tailwind CSS (Heroicons)
-  const DollarSign = ({ className }) => (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-
-  const TrendingUp = ({ className }) => (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-      />
-    </svg>
-  );
-
-  const Calendar = ({ className }) => (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-      />
-    </svg>
-  );
-
-  const CreditCard = ({ className }) => (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-      />
-    </svg>
-  );
-
-  const RefreshCw = ({ className }) => (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-      />
-    </svg>
-  );
-
-  const Filter = ({ className }) => (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-      />
-    </svg>
-  );
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
   return (
-    <div className="min-h-screen bg-[#e9e9e9] p-6">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto ">
-        <div className="flex justify-between items-center pt-6">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Báo cáo tài chính
-            </h1>
-            <p className="text-gray-600">
-              Theo dõi thu nhập và hiệu suất tài chính của bạn{" "}
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-bg-light p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab("overview")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "overview"
-                    ? "border-[#008fa0] text-[#008fa0]"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                Tổng quan doanh thu
-              </button>
-              <button
-                onClick={() => setActiveTab("reports")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "reports"
-                    ? "border-[#008fa0] text-[#008fa0]"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                Báo cáo tài chính
-              </button>
-            </nav>
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Tài chính</h1>
+            <p className="text-gray-500 text-sm">Theo dõi thu nhập và hiệu suất tài chính của bạn</p>
           </div>
+          <button
+            onClick={() => setShowWithdrawModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
+          >
+            <Banknote className="w-4 h-4" />
+            Yêu cầu rút tiền
+          </button>
         </div>
 
-        {/* Revenue Overview Tab */}
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: "overview", label: "Tổng quan doanh thu" },
+              { id: "reports", label: "Báo cáo tài chính" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === t.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Overview Tab */}
         {activeTab === "overview" && (
           <div className="space-y-8">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard
-                title="Tổng thu nhập"
-                value={new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(revenueData.totalEarnings)}
-                change={revenueData.monthlyGrowth}
-                icon={DollarSign}
-                trend="up"
-              />
-              <StatCard
-                title="Tổng giao dịch"
-                value={revenueData.totalTransactions.toLocaleString()}
-                change={8.2}
-                icon={CreditCard}
-                trend="up"
-              />
-              <StatCard
-                title="Số tiền đang chờ"
-                value={new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(revenueData.pendingAmount)}
-                icon={TrendingUp}
-              />
-              <StatCard
-                title="Tháng này"
-                value={new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(3450.75)}
-                change={15.3}
-                icon={Calendar}
-                trend="up"
-              />
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                {
+                  title: "Tổng thu nhập",
+                  value: fmt(revenueData.totalEarnings),
+                  sub: `Sau phí: ${fmt(revenueData.netEarnings)}`,
+                  icon: DollarSign,
+                  trend: "+12.5%",
+                  trendUp: true,
+                  iconBg: "bg-green-100 text-green-600",
+                },
+                {
+                  title: "Tháng này",
+                  value: fmt(revenueData.monthlyEarnings),
+                  sub: `Tăng ${revenueData.monthlyGrowth}% tháng trước`,
+                  icon: TrendingUp,
+                  trend: "+12.5%",
+                  trendUp: true,
+                  iconBg: "bg-blue-100 text-blue-600",
+                },
+                {
+                  title: "Chờ thanh toán",
+                  value: fmt(revenueData.pendingAmount),
+                  sub: "Sẽ giải ngân trong 3-5 ngày",
+                  icon: Clock,
+                  iconBg: "bg-yellow-100 text-yellow-600",
+                },
+                {
+                  title: "Phí nền tảng",
+                  value: fmt(revenueData.platformFee),
+                  sub: `${revenueData.platformFeeRate}% trên tổng doanh thu`,
+                  icon: CreditCard,
+                  iconBg: "bg-purple-100 text-purple-600",
+                },
+              ].map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`p-2 rounded-lg ${card.iconBg}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      {card.trend && (
+                        <span className={`text-xs font-medium flex items-center gap-1 ${card.trendUp ? "text-green-600" : "text-red-600"}`}>
+                          <TrendingUp className="w-3 h-3" />
+                          {card.trend}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500 mb-1">{card.title}</p>
+                    <p className="text-xl font-bold text-gray-900">{card.value}</p>
+                    <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Recent Transactions */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Giao dịch gần đây
-                  </h3>
-                  <div className="flex items-center space-x-3">
-                    <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Bộ lọc
-                    </button>
-                    <button className="text-[#008fa0] hover:text-[#007a8a] text-sm font-medium">
-                      Xem tất cả
-                    </button>
-                  </div>
+            {/* Revenue breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-green-50 border border-green-100 rounded-xl p-5">
+                <p className="text-sm font-medium text-green-800 mb-2">Doanh thu gộp</p>
+                <p className="text-2xl font-bold text-green-900">{fmt(revenueData.totalEarnings)}</p>
+                <p className="text-xs text-green-600 mt-1">{revenueData.totalTransactions} giao dịch</p>
+              </div>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-5">
+                <p className="text-sm font-medium text-red-800 mb-2">Phí nền tảng ({revenueData.platformFeeRate}%)</p>
+                <p className="text-2xl font-bold text-red-900">- {fmt(revenueData.platformFee)}</p>
+                <p className="text-xs text-red-600 mt-1">Được khấu trừ tự động</p>
+              </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+                <p className="text-sm font-medium text-blue-800 mb-2">Thu nhập thực</p>
+                <p className="text-2xl font-bold text-blue-900">{fmt(revenueData.netEarnings)}</p>
+                <p className="text-xs text-blue-600 mt-1">Sau khi trừ phí</p>
+              </div>
+            </div>
+
+            {/* Transactions */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-base font-semibold text-gray-900">Giao dịch gần đây</h3>
+                <div className="flex items-center gap-2">
+                  <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                    <Filter className="w-4 h-4" />
+                    Lọc
+                  </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Mã giao dịch
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ngày
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Số tiền
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Loại
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Trạng thái
-                      </th>
+                      {["Mã GD", "Ngày", "Mô tả", "Loại", "Trạng thái", "Số tiền"].map((h) => (
+                        <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentTransactions.map((transaction) => (
-                      <TransactionRow
-                        key={transaction.id}
-                        transaction={transaction}
-                      />
-                    ))}
+                  <tbody className="divide-y divide-gray-50">
+                    {transactions.map((t) => {
+                      const tc = typeConfig[t.type];
+                      const TIcon = tc.icon;
+                      return (
+                        <tr key={t.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 font-mono text-xs text-gray-600">{t.id}</td>
+                          <td className="px-6 py-4 text-gray-600">{t.date}</td>
+                          <td className="px-6 py-4 text-gray-700 max-w-xs truncate">{t.service}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${tc.color}`}>
+                              <TIcon className="w-3 h-3" />
+                              {tc.label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              t.status === "completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                            }`}>
+                              {t.status === "completed"
+                                ? <><CheckCircle className="w-3 h-3" /> Hoàn thành</>
+                                : <><Clock className="w-3 h-3" /> Đang chờ</>}
+                            </span>
+                          </td>
+                          <td className={`px-6 py-4 font-semibold ${t.type === "booking" ? "text-green-600" : "text-red-500"}`}>
+                            {t.type === "booking" ? "+" : "-"}{fmt(t.amount)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -495,23 +243,19 @@ const PartnerFinance = () => {
           </div>
         )}
 
-        {/* Financial Reports Tab */}
+        {/* Reports Tab */}
         {activeTab === "reports" && (
-          <div className="space-y-8">
-            {/* Report Filters */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Bộ lọc báo cáo
-              </h3>
+          <div className="space-y-6">
+            {/* Filters */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Bộ lọc báo cáo</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Loại báo cáo
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Loại báo cáo</label>
                   <select
                     value={selectedReport}
                     onChange={(e) => setSelectedReport(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#008fa0] focus:border-[#008fa0] outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
                   >
                     <option value="earnings">Thu nhập</option>
                     <option value="expenses">Chi phí</option>
@@ -520,120 +264,135 @@ const PartnerFinance = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kỳ báo cáo
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kỳ báo cáo</label>
                   <select
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#008fa0] focus:border-[#008fa0] outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
                   >
                     <option value="monthly">Hàng tháng</option>
                     <option value="quarterly">Hàng quý</option>
                     <option value="yearly">Hàng năm</option>
                   </select>
                 </div>
+                <div className="flex items-end">
+                  <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">
+                    <Filter className="w-4 h-4" />
+                    Áp dụng
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Available Reports */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-700">Tổng kết tháng</p>
+                  <div className="p-1.5 bg-green-100 rounded-lg"><TrendingUp className="w-4 h-4 text-green-600" /></div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{fmt(revenueData.monthlyEarnings)}</p>
+                <p className="text-xs text-gray-500 mt-1">Tổng thu nhập tháng này</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-700">Tăng trưởng quý</p>
+                  <div className="p-1.5 bg-blue-100 rounded-lg"><TrendingUp className="w-4 h-4 text-blue-600" /></div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">+18.2%</p>
+                <p className="text-xs text-gray-500 mt-1">So với quý trước</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-700">Tỷ lệ hoàn tiền</p>
+                  <div className="p-1.5 bg-orange-100 rounded-lg"><RefreshCw className="w-4 h-4 text-orange-600" /></div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">2.3%</p>
+                <p className="text-xs text-gray-500 mt-1">Trên tổng giao dịch</p>
+              </div>
+            </div>
+
+            {/* Reports list */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Báo cáo khả dụng
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Truy cập và tải xuống báo cáo tài chính của bạn
-                </p>
+                <h3 className="text-base font-semibold text-gray-900">Báo cáo khả dụng</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Truy cập và tải xuống báo cáo tài chính</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tên báo cáo
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Loại
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ngày tạo
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Hành động
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {reports.map((report) => (
-                      <ReportRow key={report.id} report={report} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Report Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-medium text-gray-900">
-                    Tổng kết tháng
-                  </h4>
-                  <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-2">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(3450.75)}
-                </p>
-                <p className="text-sm text-gray-600">Tổng thu nhập tháng này</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-medium text-gray-900">
-                    Tăng trưởng quý
-                  </h4>
-                  <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="h-4 w-4 text-blue-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 10l7-7m0 0l7 7m-7-7v18"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-2">+18.2%</p>
-                <p className="text-sm text-gray-600">So với quý trước</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-medium text-gray-900">
-                    Tỷ lệ hoàn tiền
-                  </h4>
-                  <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <RefreshCw className="h-4 w-4 text-orange-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-2">2.3%</p>
-                <p className="text-sm text-gray-600">Trên tổng giao dịch</p>
+              <div className="divide-y divide-gray-50">
+                {reports.map((r) => {
+                  const rc = reportTypeConfig[r.type];
+                  return (
+                    <div key={r.id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <FileText className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{r.name}</p>
+                          <p className="text-xs text-gray-400">{r.size} · {r.date}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${rc.color}`}>{rc.label}</span>
+                        <button className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded" title="Tải xuống">
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Yêu cầu rút tiền</h3>
+            <p className="text-sm text-gray-500 mb-5">Số dư khả dụng: <span className="font-semibold text-green-600">{fmt(revenueData.netEarnings)}</span></p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền muốn rút (₫)</label>
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  placeholder="VD: 5000000"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tài khoản ngân hàng</label>
+                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white">
+                  <option>Vietcombank - **** 4521</option>
+                  <option>Techcombank - **** 8832</option>
+                </select>
+              </div>
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-yellow-700">Thời gian xử lý 3–5 ngày làm việc. Phí giao dịch: miễn phí.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium"
+              >
+                Xác nhận rút tiền
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

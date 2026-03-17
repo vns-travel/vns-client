@@ -2,16 +2,11 @@ import React, { useState } from "react";
 import {
   Car,
   MapPin,
-  DollarSign,
-  FileText,
-  Settings,
   Plus,
-  Minus,
   Trash2,
   CheckCircle,
   ArrowLeft,
   ArrowRight,
-  Info,
   List,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -121,7 +116,7 @@ const PartnerCarRentalRegistration = () => {
           template.basePricePerDay <= 0
         ) {
           alert(
-            "Tất cả mẫu xe phải có hãng, dòng xe, hạng xe và giá cơ bản > 0!"
+            "Tất cả mẫu xe phải có hãng, dòng xe, hạng xe và giá cơ bản > 0!",
           );
           return;
         }
@@ -179,9 +174,9 @@ const PartnerCarRentalRegistration = () => {
           field === "name"
             ? "tên depot"
             : field === "address"
-            ? "địa chỉ"
-            : "thông tin liên hệ"
-        }!`
+              ? "địa chỉ"
+              : "thông tin liên hệ"
+        }!`,
       );
       return;
     }
@@ -213,7 +208,7 @@ const PartnerCarRentalRegistration = () => {
     setFormData((prev) => ({
       ...prev,
       depots: prev.depots.map((depot) =>
-        depot.id === id ? { ...depot, [field]: value } : depot
+        depot.id === id ? { ...depot, [field]: value } : depot,
       ),
     }));
   };
@@ -224,7 +219,7 @@ const PartnerCarRentalRegistration = () => {
         ...prev,
         depots: prev.depots.filter((depot) => depot.id !== id),
         depotInventories: prev.depotInventories.filter(
-          (inv) => inv.depotId !== id
+          (inv) => inv.depotId !== id,
         ),
       }));
     }
@@ -274,7 +269,7 @@ const PartnerCarRentalRegistration = () => {
       alert(
         `Vui lòng nhập ${
           field === "brand" ? "hãng" : field === "model" ? "dòng xe" : "hạng xe"
-        }!`
+        }!`,
       );
       return;
     }
@@ -311,7 +306,7 @@ const PartnerCarRentalRegistration = () => {
             field === "minRentalHours"
               ? "Thời gian thuê tối thiểu"
               : "Thời gian thuê tối đa"
-          } phải lớn hơn 0!`
+          } phải lớn hơn 0!`,
         );
         return;
       }
@@ -334,7 +329,7 @@ const PartnerCarRentalRegistration = () => {
     setFormData((prev) => ({
       ...prev,
       fleetTemplates: prev.fleetTemplates.map((template) =>
-        template.id === id ? { ...template, [field]: value } : template
+        template.id === id ? { ...template, [field]: value } : template,
       ),
     }));
   };
@@ -350,7 +345,7 @@ const PartnerCarRentalRegistration = () => {
                 ? template.features.filter((f) => f !== feature)
                 : [...template.features, feature],
             }
-          : template
+          : template,
       ),
     }));
   };
@@ -360,10 +355,10 @@ const PartnerCarRentalRegistration = () => {
       setFormData((prev) => ({
         ...prev,
         fleetTemplates: prev.fleetTemplates.filter(
-          (template) => template.id !== id
+          (template) => template.id !== id,
         ),
         depotInventories: prev.depotInventories.filter(
-          (inv) => inv.templateId !== id
+          (inv) => inv.templateId !== id,
         ),
       }));
     }
@@ -378,7 +373,7 @@ const PartnerCarRentalRegistration = () => {
 
     setFormData((prev) => {
       const existingIndex = prev.depotInventories.findIndex(
-        (inv) => inv.depotId === depotId && inv.templateId === templateId
+        (inv) => inv.depotId === depotId && inv.templateId === templateId,
       );
 
       if (existingIndex >= 0) {
@@ -406,14 +401,14 @@ const PartnerCarRentalRegistration = () => {
     setFormData((prev) => ({
       ...prev,
       depotInventories: prev.depotInventories.filter(
-        (inv) => !(inv.depotId === depotId && inv.templateId === templateId)
+        (inv) => !(inv.depotId === depotId && inv.templateId === templateId),
       ),
     }));
   };
 
   const getAssignedQuantity = (depotId, templateId) => {
     const assignment = formData.depotInventories.find(
-      (inv) => inv.depotId === depotId && inv.templateId === templateId
+      (inv) => inv.depotId === depotId && inv.templateId === templateId,
     );
     return assignment ? assignment.quantity : 0;
   };
@@ -587,7 +582,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "brand",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -605,7 +600,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "model",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -622,7 +617,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "category",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -649,7 +644,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "year",
-                            parseInt(e.target.value)
+                            parseInt(e.target.value),
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -668,7 +663,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "seats",
-                            parseInt(e.target.value)
+                            parseInt(e.target.value),
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -686,7 +681,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "transmissionType",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -705,7 +700,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "fuelType",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -760,7 +755,7 @@ const PartnerCarRentalRegistration = () => {
                           updateFleetTemplate(
                             template.id,
                             "basePricePerDay",
-                            parseInt(e.target.value)
+                            parseInt(e.target.value),
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-[--color-primary]"
@@ -784,7 +779,7 @@ const PartnerCarRentalRegistration = () => {
                             updateFleetTemplate(
                               template.id,
                               "minRentalHours",
-                              parseInt(e.target.value)
+                              parseInt(e.target.value),
                             )
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -802,7 +797,7 @@ const PartnerCarRentalRegistration = () => {
                             updateFleetTemplate(
                               template.id,
                               "maxRentalDays",
-                              parseInt(e.target.value)
+                              parseInt(e.target.value),
                             )
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -873,7 +868,7 @@ const PartnerCarRentalRegistration = () => {
                               assignInventoryToDepot(
                                 depot.id,
                                 template.id,
-                                parseInt(e.target.value) || 0
+                                parseInt(e.target.value) || 0,
                               )
                             }
                             className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-primary"
@@ -972,7 +967,7 @@ const PartnerCarRentalRegistration = () => {
                     {formData.depots.map((depot) => {
                       const assignmentsForDepot =
                         formData.depotInventories.filter(
-                          (inv) => inv.depotId === depot.id
+                          (inv) => inv.depotId === depot.id,
                         );
                       if (assignmentsForDepot.length === 0) return null;
 
@@ -983,7 +978,7 @@ const PartnerCarRentalRegistration = () => {
                           </div>
                           {assignmentsForDepot.map((assignment) => {
                             const template = formData.fleetTemplates.find(
-                              (t) => t.id === assignment.templateId
+                              (t) => t.id === assignment.templateId,
                             );
                             return (
                               <div
@@ -1025,7 +1020,7 @@ const PartnerCarRentalRegistration = () => {
 
   const publishCarRental = () => {
     const confirmation = document.getElementById(
-      "publish-confirmation"
+      "publish-confirmation",
     ).checked;
     if (!confirmation) {
       alert("Vui lòng xác nhận điều khoản và điều kiện!");
@@ -1087,8 +1082,8 @@ const PartnerCarRentalRegistration = () => {
                     currentStep === step.id
                       ? "bg-primary text-white border-2 border-[--color-primary]"
                       : currentStep > step.id
-                      ? "bg-green-500 text-white border-2 border-green-500"
-                      : "bg-white border-2 border-gray-300 text-gray-500"
+                        ? "bg-green-500 text-white border-2 border-green-500"
+                        : "bg-white border-2 border-gray-300 text-gray-500"
                   }`}
                 >
                   {currentStep > step.id ? (

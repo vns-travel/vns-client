@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -33,7 +34,8 @@ import {
   XCircle,
 } from "lucide-react";
 
-const PartnerPromotion = () => {
+const PartnerCombo = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("created");
@@ -356,7 +358,12 @@ const PartnerPromotion = () => {
             </h1>
             <p className="text-gray-600">Quản lý gói dịch vụ của bạn</p>
           </div>
-          <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-hover flex items-center">
+          <button
+            onClick={() => {
+              navigate("/PartnerCombo/create");
+            }}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-hover flex items-center"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Tạo mới
           </button>
@@ -910,4 +917,4 @@ const PartnerPromotion = () => {
   );
 };
 
-export default PartnerPromotion;
+export default PartnerCombo;

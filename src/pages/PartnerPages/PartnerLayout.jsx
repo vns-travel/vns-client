@@ -31,7 +31,7 @@ const PartnerLayout = () => {
             icon: <HandPlatter />,
           },
           {
-            path: "/PartnerPromotion",
+            path: "/PartnerCombo",
             label: "Khuyến Mãi",
             icon: <TicketPercent />,
           },
