@@ -21,7 +21,7 @@ const documents = [
     partnerId: "P001",
     email: "contact@saigonfood.vn",
     phone: "+84 901 234 567",
-    submitted: "15/05/2024",
+    submitted: "15/05/2026",
     status: "pending",
     type: "new_partner",
     docs: [
@@ -37,7 +37,7 @@ const documents = [
     partnerId: "P002",
     email: "info@halongcruise.com",
     phone: "+84 912 345 678",
-    submitted: "14/05/2024",
+    submitted: "14/05/2026",
     status: "pending",
     type: "new_partner",
     docs: [
@@ -53,7 +53,7 @@ const documents = [
     partnerId: "P003",
     email: "hello@hoianphoto.com",
     phone: "+84 935 678 901",
-    submitted: "14/05/2024",
+    submitted: "14/05/2026",
     status: "pending",
     type: "update",
     docs: [
@@ -67,7 +67,7 @@ const documents = [
     partnerId: "P004",
     email: "info@sapaadventure.vn",
     phone: "+84 945 321 987",
-    submitted: "10/05/2024",
+    submitted: "10/05/2026",
     status: "approved",
     type: "new_partner",
     docs: [
@@ -83,7 +83,7 @@ const documents = [
     partnerId: "P005",
     email: "dive@nhatrangdive.com",
     phone: "+84 912 888 777",
-    submitted: "08/05/2024",
+    submitted: "08/05/2026",
     status: "rejected",
     type: "new_partner",
     docs: [

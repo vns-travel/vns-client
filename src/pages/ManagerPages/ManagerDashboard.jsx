@@ -77,15 +77,15 @@ const quickActions = [
 ];
 
 const verificationRequests = [
-  { id: "P001", name: "Saigon Street Food Tour", submitted: "15/05/2024", type: "Đối tác mới" },
-  { id: "P002", name: "Halong Bay Cruise", submitted: "14/05/2024", type: "Đối tác mới" },
-  { id: "P003", name: "Hoi An Photography", submitted: "14/05/2024", type: "Cập nhật hồ sơ" },
+  { id: "P001", name: "Saigon Street Food Tour", submitted: "15/05/2026", type: "Đối tác mới" },
+  { id: "P002", name: "Halong Bay Cruise", submitted: "14/05/2026", type: "Đối tác mới" },
+  { id: "P003", name: "Hoi An Photography", submitted: "14/05/2026", type: "Cập nhật hồ sơ" },
 ];
 
 const pendingServices = [
-  { id: "S001", partner: "Dalat Riverside Resort", service: "Villa 4 phòng ngủ", type: "Lưu trú", submitted: "16/05/2024" },
-  { id: "S002", partner: "Mekong Delta Tours", service: "Tour sông Mekong 2N1Đ", type: "Tour", submitted: "15/05/2024" },
-  { id: "S003", partner: "Phu Quoc Car Rental", service: "Thuê xe 7 chỗ có lái", type: "Thuê xe", submitted: "15/05/2024" },
+  { id: "S001", partner: "Dalat Riverside Resort", service: "Villa 4 phòng ngủ", type: "Lưu trú", submitted: "16/05/2026" },
+  { id: "S002", partner: "Mekong Delta Tours", service: "Tour sông Mekong 2N1Đ", type: "Tour", submitted: "15/05/2026" },
+  { id: "S003", partner: "Phu Quoc Car Rental", service: "Thuê xe 7 chỗ có lái", type: "Thuê xe", submitted: "15/05/2026" },
 ];
 
 const recentActivities = [

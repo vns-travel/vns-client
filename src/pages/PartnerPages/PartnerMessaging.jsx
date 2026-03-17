@@ -32,11 +32,11 @@ const PartnerMessaging = () => {
       timestamp: "14:30",
       unreadCount: 0,
       isOnline: true,
-      bookingId: "VNS-HB-20241501",
+      bookingId: "VNS-HB-20261501",
       serviceName: "Oceanview Deluxe Homestay",
       serviceType: "Homestay",
       bookingStatus: "confirmed",
-      checkInDate: "2024-06-10",
+      checkInDate: "2026-06-10",
       messages: [
         {
           id: 1,
@@ -194,7 +194,7 @@ const PartnerMessaging = () => {
     //   serviceName: "Hanoi Old Quarter Street Food Tour",
     //   serviceType: "Tour",
     //   bookingStatus: "confirmed",
-    //   tourDate: "2024-06-18",
+    //   tourDate: "2026-06-18",
     //   messages: [
     //     {
     //       id: 1,
@@ -281,7 +281,7 @@ const PartnerMessaging = () => {
     //   serviceName: "Thuê Xe SUV 7 Chỗ - Toyota Fortuner",
     //   serviceType: "Car Rental",
     //   bookingStatus: "confirmed",
-    //   rentalDate: "2024-06-22",
+    //   rentalDate: "2026-06-22",
     //   messages: [
     //     {
     //       id: 1,
@@ -359,7 +359,7 @@ const PartnerMessaging = () => {
     //   serviceName: "Hội An Cultural Heritage Walk",
     //   serviceType: "Tour",
     //   bookingStatus: "confirmed",
-    //   tourDate: "2024-06-25",
+    //   tourDate: "2026-06-25",
     //   messages: [
     //     {
     //       id: 1,
@@ -453,7 +453,7 @@ const PartnerMessaging = () => {
     //   serviceName: "Thuê Xe Sedan Mercedes C-Class",
     //   serviceType: "Car Rental",
     //   bookingStatus: "cancelled",
-    //   rentalDate: "2024-07-01",
+    //   rentalDate: "2026-07-01",
     //   messages: [
     //     {
     //       id: 1,

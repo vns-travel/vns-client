@@ -34,20 +34,7 @@ const PartnerServiceModal = ({ onClose }) => {
   const handleContinue = () => {
     if (selectedType) {
       onClose();
-
-      switch (selectedType) {
-        case "rental":
-          navigate("/PartnerService/rental");
-          break;
-        case "tour":
-          navigate("/PartnerService/tour");
-          break;
-        case "car":
-          navigate("/PartnerService/car");
-          break;
-        default:
-          break;
-      }
+      navigate("/PartnerService/register", { state: { type: selectedType } });
     }
   };
 

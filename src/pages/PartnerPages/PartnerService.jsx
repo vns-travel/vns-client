@@ -48,15 +48,15 @@ const PartnerService = () => {
       thisMonthBookings: 23,
       viewCount: 1847,
       revenue: 410400000, // Total revenue
-      lastBooked: "2024-03-15",
+      lastBooked: "2026-03-15",
       availability: 85, // Percentage
       responseTime: "< 1 giờ",
       image: "/images/car.jpg",
       amenities: ["WiFi miễn phí", "Điều hòa", "Nhà bếp", "Hồ bơi"],
       maxGuests: 4,
       bedrooms: 2,
-      createdAt: "2023-08-15",
-      lastModified: "2024-03-10",
+      createdAt: "2026-08-15",
+      lastModified: "2026-03-10",
     },
     {
       id: 2,
@@ -73,7 +73,7 @@ const PartnerService = () => {
       thisMonthBookings: 41,
       viewCount: 3241,
       revenue: 255150000,
-      lastBooked: "2024-03-16",
+      lastBooked: "2026-03-16",
       availability: 95,
       responseTime: "< 30 phút",
       image: "/api/placeholder/400/300",
@@ -82,8 +82,8 @@ const PartnerService = () => {
       included: ["Hướng dẫn viên", "Đồ ăn", "Nước uống"],
       startTimes: ["09:00", "14:00", "18:00"],
       language: ["Tiếng Việt", "Tiếng Anh"],
-      createdAt: "2023-05-20",
-      lastModified: "2024-02-28",
+      createdAt: "2026-05-20",
+      lastModified: "2026-02-28",
     },
     {
       id: 3,
@@ -100,7 +100,7 @@ const PartnerService = () => {
       thisMonthBookings: 12,
       viewCount: 892,
       revenue: 142400000,
-      lastBooked: "2024-03-14",
+      lastBooked: "2026-03-14",
       availability: 70,
       responseTime: "< 2 giờ",
       image: "/api/placeholder/400/300",
@@ -109,8 +109,8 @@ const PartnerService = () => {
       fuelType: "Xăng",
       year: "2022",
       included: ["Tài xế", "Xăng", "Bảo hiểm"],
-      createdAt: "2023-11-10",
-      lastModified: "2024-03-05",
+      createdAt: "2026-11-10",
+      lastModified: "2026-03-05",
     },
     {
       id: 4,
@@ -127,15 +127,15 @@ const PartnerService = () => {
       thisMonthBookings: 8,
       viewCount: 2341,
       revenue: 546000000,
-      lastBooked: "2024-03-13",
+      lastBooked: "2026-03-13",
       availability: 60,
       responseTime: "< 2 giờ",
       image: "/api/placeholder/400/300",
       amenities: ["View núi", "Lò sưởi", "BBQ", "Vườn rộng"],
       maxGuests: 10,
       bedrooms: 5,
-      createdAt: "2023-06-01",
-      lastModified: "2024-03-08",
+      createdAt: "2026-06-01",
+      lastModified: "2026-03-08",
     },
     {
       id: 5,
@@ -152,7 +152,7 @@ const PartnerService = () => {
       thisMonthBookings: 0,
       viewCount: 567,
       revenue: 249200000,
-      lastBooked: "2024-02-28",
+      lastBooked: "2026-02-28",
       availability: 0, // Inactive
       responseTime: "Không hoạt động",
       image: "/api/placeholder/400/300",
@@ -162,8 +162,8 @@ const PartnerService = () => {
       startTimes: ["Thứ 6 hàng tuần"],
       language: ["Tiếng Việt", "Tiếng Anh"],
       inactiveReason: "Đang bảo trì",
-      createdAt: "2023-09-15",
-      lastModified: "2024-02-25",
+      createdAt: "2026-09-15",
+      lastModified: "2026-02-25",
     },
     {
       id: 6,
@@ -190,8 +190,8 @@ const PartnerService = () => {
       year: "2023",
       included: ["Bảo hiểm", "Hỗ trợ 24/7"],
       pendingReason: "Đang chờ xác minh giấy tờ xe",
-      createdAt: "2024-03-12",
-      lastModified: "2024-03-12",
+      createdAt: "2026-03-12",
+      lastModified: "2026-03-12",
     },
     {
       id: 7,
@@ -208,15 +208,15 @@ const PartnerService = () => {
       thisMonthBookings: 19,
       viewCount: 2156,
       revenue: 536400000,
-      lastBooked: "2024-03-15",
+      lastBooked: "2026-03-15",
       availability: 75,
       responseTime: "< 1 giờ",
       image: "/api/placeholder/400/300",
       amenities: ["View biển", "Hồ bơi", "Gym", "Bãi đỗ xe"],
       maxGuests: 6,
       bedrooms: 3,
-      createdAt: "2023-07-20",
-      lastModified: "2024-03-11",
+      createdAt: "2026-07-20",
+      lastModified: "2026-03-11",
     },
     {
       id: 8,
@@ -233,7 +233,7 @@ const PartnerService = () => {
       thisMonthBookings: 28,
       viewCount: 1923,
       revenue: 144200000,
-      lastBooked: "2024-03-16",
+      lastBooked: "2026-03-16",
       availability: 90,
       responseTime: "< 30 phút",
       image: "/api/placeholder/400/300",
@@ -242,8 +242,8 @@ const PartnerService = () => {
       included: ["Hướng dẫn viên", "Vé tham quan", "Nước uống"],
       startTimes: ["08:00", "15:00"],
       language: ["Tiếng Việt", "Tiếng Anh", "Tiếng Pháp"],
-      createdAt: "2023-04-10",
-      lastModified: "2024-03-09",
+      createdAt: "2026-04-10",
+      lastModified: "2026-03-09",
     },
   ];
 
@@ -357,8 +357,8 @@ const PartnerService = () => {
     setIsModalOpen(false);
   };
 
-  const handleOpenDetail = () => {
-    navigate("/PartnerService/rentalDetail");
+  const handleOpenDetail = (service) => {
+    navigate("/PartnerService/detail", { state: { type: service.type, id: service.id } });
   };
 
   return (
@@ -705,7 +705,7 @@ const PartnerService = () => {
                         (e.target.style.backgroundColor =
                           "var(--color-primary)")
                       }
-                      onClick={() => handleOpenDetail()}
+                      onClick={() => handleOpenDetail(service)}
                     >
                       <Edit2 className="w-4 h-4 mr-1" />
                       Chỉnh sửa

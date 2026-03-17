@@ -128,7 +128,7 @@ const ManagerPromotionCreate = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => update("name", e.target.value)}
-                  placeholder="VD: Ưu đãi đặt sớm mùa hè 2024"
+                  placeholder="VD: Ưu đãi đặt sớm mùa hè 2026"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
@@ -154,7 +154,7 @@ const ManagerPromotionCreate = () => {
                   onChange={(e) =>
                     update("promoCode", e.target.value.toUpperCase())
                   }
-                  placeholder="VD: SUMMER2024"
+                  placeholder="VD: SUMMER2026"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono"
                 />
                 <p className="text-xs text-gray-400 mt-1">

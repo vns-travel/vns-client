@@ -31,19 +31,19 @@ const platformStats = {
 };
 
 const partnerPayouts = [
-  { id: "PAY-001", partner: "Hanoi Heritage Hotel", amount: 45670000, fee: 4567000, net: 41103000, period: "T5/2024", status: "completed", date: "01/06/2024" },
-  { id: "PAY-002", partner: "Mekong Delta Tours", amount: 28900000, fee: 2890000, net: 26010000, period: "T5/2024", status: "completed", date: "01/06/2024" },
-  { id: "PAY-003", partner: "Phu Quoc Car Rental", amount: 19500000, fee: 1950000, net: 17550000, period: "T5/2024", status: "pending", date: "—" },
-  { id: "PAY-004", partner: "Sapa Adventure Tours", amount: 35200000, fee: 3520000, net: 31680000, period: "T5/2024", status: "pending", date: "—" },
-  { id: "PAY-005", partner: "Hoi An Boutique", amount: 22100000, fee: 2210000, net: 19890000, period: "T4/2024", status: "completed", date: "01/05/2024" },
+  { id: "PAY-001", partner: "Hanoi Heritage Hotel", amount: 45670000, fee: 4567000, net: 41103000, period: "T5/2026", status: "completed", date: "01/06/2026" },
+  { id: "PAY-002", partner: "Mekong Delta Tours", amount: 28900000, fee: 2890000, net: 26010000, period: "T5/2026", status: "completed", date: "01/06/2026" },
+  { id: "PAY-003", partner: "Phu Quoc Car Rental", amount: 19500000, fee: 1950000, net: 17550000, period: "T5/2026", status: "pending", date: "—" },
+  { id: "PAY-004", partner: "Sapa Adventure Tours", amount: 35200000, fee: 3520000, net: 31680000, period: "T5/2026", status: "pending", date: "—" },
+  { id: "PAY-005", partner: "Hoi An Boutique", amount: 22100000, fee: 2210000, net: 19890000, period: "T4/2026", status: "completed", date: "01/05/2026" },
 ];
 
 const transactions = [
-  { id: "TXN-001", type: "booking_fee", partner: "Hanoi Heritage Hotel", amount: 250000, date: "16/05/2024", status: "completed" },
-  { id: "TXN-002", type: "booking_fee", partner: "Mekong Delta Tours", amount: 180000, date: "16/05/2024", status: "completed" },
-  { id: "TXN-003", type: "refund", partner: "Phu Quoc Car Rental", amount: 120000, date: "15/05/2024", status: "completed" },
-  { id: "TXN-004", type: "booking_fee", partner: "Sapa Adventure Tours", amount: 450000, date: "15/05/2024", status: "completed" },
-  { id: "TXN-005", type: "payout", partner: "Hoi An Boutique", amount: 19890000, date: "14/05/2024", status: "pending" },
+  { id: "TXN-001", type: "booking_fee", partner: "Hanoi Heritage Hotel", amount: 250000, date: "16/05/2026", status: "completed" },
+  { id: "TXN-002", type: "booking_fee", partner: "Mekong Delta Tours", amount: 180000, date: "16/05/2026", status: "completed" },
+  { id: "TXN-003", type: "refund", partner: "Phu Quoc Car Rental", amount: 120000, date: "15/05/2026", status: "completed" },
+  { id: "TXN-004", type: "booking_fee", partner: "Sapa Adventure Tours", amount: 450000, date: "15/05/2026", status: "completed" },
+  { id: "TXN-005", type: "payout", partner: "Hoi An Boutique", amount: 19890000, date: "14/05/2026", status: "pending" },
 ];
 
 const txTypeConfig = {

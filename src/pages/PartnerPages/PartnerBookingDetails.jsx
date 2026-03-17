@@ -25,7 +25,7 @@ const PartnerBookingDetails = () => {
 
   // Mock booking data updated for Oceanview Homestay
   const booking = {
-    bookingId: "BK-2024-001",
+    bookingId: "BK-2026-001",
     bookingReference: "VNS-HCM-240815-001",
     bookingType: "Homestay", // Homestay, Tour, Vehicle Rental
     bookingStatus: "pending",
@@ -37,8 +37,8 @@ const PartnerBookingDetails = () => {
     numberOfGuests: 6,
     specialRequests:
       "Ưa thích nhận phòng sớm nếu có thể, vui lòng xác nhận chi tiết quyền truy cập hồ bơi",
-    createdAt: "2024-08-10T14:20:00",
-    updatedAt: "2024-08-10T15:45:00",
+    createdAt: "2026-08-10T14:20:00",
+    updatedAt: "2026-08-10T15:45:00",
 
     // Customer information
     customer: {
@@ -50,8 +50,8 @@ const PartnerBookingDetails = () => {
 
     // Homestay booking details
     homestayBooking: {
-      checkInDate: "2024-08-20T15:00:00",
-      checkOutDate: "2024-08-25T11:00:00",
+      checkInDate: "2026-08-20T15:00:00",
+      checkOutDate: "2026-08-25T11:00:00",
       nights: 5,
       adults: 4,
       children: 2,
@@ -60,7 +60,7 @@ const PartnerBookingDetails = () => {
       serviceFee: 300000, // VND
       totalAccommodationCost: 3200000, // VND
       hostApprovalRequired: true,
-      hostApprovedAt: "2024-08-10T15:45:00",
+      hostApprovedAt: "2026-08-10T15:45:00",
     },
 
     // Service and location info - Updated for Oceanview Homestay
@@ -100,7 +100,7 @@ const PartnerBookingDetails = () => {
         paymentId: "PAY-001",
         amount: 640000,
         paymentType: "deposit",
-        paymentTime: "2024-08-10T14:35:00",
+        paymentTime: "2026-08-10T14:35:00",
         transactionId: "TXN-VNP-240810-001",
         paymentMethod: "credit_card",
         paymentStatus: "completed",
@@ -109,7 +109,7 @@ const PartnerBookingDetails = () => {
         paymentId: "PAY-002",
         amount: 2560000,
         paymentType: "balance",
-        paymentTime: "2024-08-18T10:00:00",
+        paymentTime: "2026-08-18T10:00:00",
         transactionId: "TXN-VNP-240818-002",
         paymentMethod: "credit_card",
         paymentStatus: "completed",
@@ -438,7 +438,7 @@ const PartnerBookingDetails = () => {
                       {booking.customer.fullName}
                     </h4>
                     <p className="text-sm text-gray-500">
-                      Khách hàng từ tháng 8 năm 2024
+                      Khách hàng từ tháng 8 năm 2026
                     </p>
                   </div>
                 </div>

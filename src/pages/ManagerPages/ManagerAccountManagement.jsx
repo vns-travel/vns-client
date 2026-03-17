@@ -29,7 +29,7 @@ export default function ManagerAccountManagement() {
       email: "minhtri@dulichtour.vn",
       phone: "+84 901 234 567",
       businessType: "tours",
-      submittedDate: "2025-01-15",
+      submittedDate: "2026-01-15",
       status: "pending",
       documents: {
         houseRental: { uploaded: true, fileName: "giay-phep-cho-thue-nha.pdf" },
@@ -45,7 +45,7 @@ export default function ManagerAccountManagement() {
       email: "thanhhoa@hoamai.vn",
       phone: "+84 902 345 678",
       businessType: "accommodation",
-      submittedDate: "2025-01-14",
+      submittedDate: "2026-01-14",
       status: "pending",
       documents: {
         houseRental: { uploaded: true, fileName: "giay-phep-khach-san.pdf" },
@@ -61,7 +61,7 @@ export default function ManagerAccountManagement() {
       email: "vanduc@ducanhcar.vn",
       phone: "+84 903 456 789",
       businessType: "transportation",
-      submittedDate: "2025-01-13",
+      submittedDate: "2026-01-13",
       status: "approved",
       documents: {
         houseRental: { uploaded: false, fileName: null },
