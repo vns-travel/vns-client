@@ -2,797 +2,36 @@ import React, { useState, useEffect } from "react";
 import {
   Home,
   MapPin,
-  Camera,
   FileText,
   Bed,
-  Car,
   List,
   CheckCircle,
   ArrowLeft,
   ArrowRight,
   Plus,
   Trash2,
-  DollarSign,
-  Users,
   Clock,
-  Package,
-  HandPlatter,
+  Loader2,
+  AlertCircle,
+  Compass,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-
-/* ═══════════════════════════════════════════
-   RENTAL STEPS
-═══════════════════════════════════════════ */
-const RENTAL_STEPS = [
-  { id: 1, title: "Thông tin cơ bản", icon: Home },
-  { id: 2, title: "Hình ảnh & Tiện nghi", icon: Camera },
-  { id: 3, title: "Chính sách", icon: FileText },
-  { id: 4, title: "Loại phòng", icon: Bed },
-  { id: 5, title: "Xác nhận & Đăng", icon: CheckCircle },
-];
-
-const RENTAL_AMENITIES = [
-  "WiFi miễn phí",
-  "Điều hòa",
-  "Nhà bếp",
-  "Hồ bơi",
-  "Bãi đỗ xe",
-  "Thang máy",
-  "Gym",
-  "Lễ tân 24/7",
-  "View biển",
-  "Lò sưởi",
-  "BBQ",
-  "Vườn",
-];
-
-const RentalForm = ({
-  step,
-  formData,
-  update,
-  updateRoom,
-  addRoom,
-  removeRoom,
-}) => {
-  if (step === 1)
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Tên cơ sở lưu trú *"
-            value={formData.propertyName}
-            onChange={(v) => update("propertyName", v)}
-            placeholder="VD: Oceanview Deluxe Homestay"
-          />
-          <FormField
-            label="Thành phố *"
-            value={formData.city}
-            onChange={(v) => update("city", v)}
-            placeholder="VD: TP. Hồ Chí Minh"
-          />
-          <FormField
-            label="Quận / Huyện"
-            value={formData.district}
-            onChange={(v) => update("district", v)}
-            placeholder="VD: Quận 1"
-          />
-          <FormField
-            label="Địa chỉ *"
-            value={formData.address}
-            onChange={(v) => update("address", v)}
-            placeholder="Số nhà, đường..."
-          />
-          <FormField
-            label="Giờ nhận phòng"
-            value={formData.checkInTime}
-            onChange={(v) => update("checkInTime", v)}
-            type="time"
-          />
-          <FormField
-            label="Giờ trả phòng"
-            value={formData.checkOutTime}
-            onChange={(v) => update("checkOutTime", v)}
-            type="time"
-          />
-        </div>
-        <FormTextarea
-          label="Mô tả"
-          value={formData.description}
-          onChange={(v) => update("description", v)}
-          placeholder="Mô tả ngắn về cơ sở lưu trú..."
-        />
-      </div>
-    );
-
-  if (step === 2)
-    return (
-      <div className="space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Hình ảnh
-          </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-500 text-sm">
-            <Camera className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            Kéo thả hoặc nhấn để tải lên hình ảnh
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Tiện nghi
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {RENTAL_AMENITIES.map((a) => (
-              <label key={a} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.includes(a)}
-                  onChange={(e) => {
-                    const next = e.target.checked
-                      ? [...formData.amenities, a]
-                      : formData.amenities.filter((x) => x !== a);
-                    update("amenities", next);
-                  }}
-                  className="rounded"
-                />
-                <span className="text-sm">{a}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-
-  if (step === 3)
-    return (
-      <div className="space-y-4">
-        <FormTextarea
-          label="Nội quy nhà"
-          value={formData.houseRules}
-          onChange={(v) => update("houseRules", v)}
-          placeholder="Quy định về hút thuốc, thú cưng, tiệc tùng..."
-        />
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Chính sách hủy phòng
-          </label>
-          <select
-            value={formData.cancellationPolicy}
-            onChange={(e) => update("cancellationPolicy", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-          >
-            <option value="">Chọn chính sách</option>
-            <option value="flexible">Linh hoạt – Hoàn tiền 24h trước</option>
-            <option value="moderate">Vừa phải – Hoàn tiền 5 ngày trước</option>
-            <option value="strict">Nghiêm ngặt – Không hoàn tiền</option>
-          </select>
-        </div>
-      </div>
-    );
-
-  if (step === 4)
-    return (
-      <div className="space-y-4">
-        {formData.roomTypes.map((room, idx) => (
-          <div
-            key={idx}
-            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-800">
-                Loại phòng #{idx + 1}
-              </h4>
-              {formData.roomTypes.length > 1 && (
-                <button
-                  onClick={() => removeRoom(idx)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <FormField
-                label="Tên loại phòng *"
-                value={room.roomName}
-                onChange={(v) => updateRoom(idx, "roomName", v)}
-                placeholder="VD: Phòng Deluxe"
-              />
-              <FormField
-                label="Loại giường"
-                value={room.bedType}
-                onChange={(v) => updateRoom(idx, "bedType", v)}
-                placeholder="VD: King Bed"
-              />
-              <FormField
-                label="Giá cơ bản (₫/đêm)"
-                value={room.basePrice}
-                onChange={(v) => updateRoom(idx, "basePrice", v)}
-                type="number"
-              />
-              <FormField
-                label="Giá cuối tuần (₫/đêm)"
-                value={room.weekendPrice}
-                onChange={(v) => updateRoom(idx, "weekendPrice", v)}
-                type="number"
-              />
-              <FormField
-                label="Số khách tối đa"
-                value={room.maxOccupancy}
-                onChange={(v) => updateRoom(idx, "maxOccupancy", v)}
-                type="number"
-              />
-              <FormField
-                label="Số phòng loại này"
-                value={room.numberOfRooms}
-                onChange={(v) => updateRoom(idx, "numberOfRooms", v)}
-                type="number"
-              />
-            </div>
-          </div>
-        ))}
-        <button
-          onClick={addRoom}
-          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
-        >
-          <Plus className="w-4 h-4" /> Thêm loại phòng
-        </button>
-      </div>
-    );
-
-  return null;
-};
-
-/* ═══════════════════════════════════════════
-   TOUR STEPS
-═══════════════════════════════════════════ */
-const TOUR_STEPS = [
-  { id: 1, title: "Thông tin tour", icon: HandPlatter },
-  { id: 2, title: "Địa điểm", icon: MapPin },
-  { id: 3, title: "Số lượng & Điều kiện", icon: Users },
-  { id: 4, title: "Bao gồm / Không bao gồm", icon: List },
-  { id: 5, title: "Định giá", icon: DollarSign },
-  { id: 6, title: "Hình ảnh", icon: Camera },
-  { id: 7, title: "Xác nhận & Đăng", icon: CheckCircle },
-];
-
-const TourForm = ({
-  step,
-  formData,
-  update,
-  updateItinerary,
-  addItinerary,
-  removeItinerary,
-}) => {
-  if (step === 1)
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Loại tour
-            </label>
-            <select
-              value={formData.tourType}
-              onChange={(e) => update("tourType", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-            >
-              <option value="cultural">Văn hóa</option>
-              <option value="food">Ẩm thực</option>
-              <option value="adventure">Phiêu lưu</option>
-              <option value="nature">Thiên nhiên</option>
-              <option value="city">Thành phố</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Độ khó
-            </label>
-            <select
-              value={formData.difficultyLevel}
-              onChange={(e) => update("difficultyLevel", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-            >
-              <option value="easy">Dễ</option>
-              <option value="moderate">Vừa</option>
-              <option value="hard">Khó</option>
-            </select>
-          </div>
-          <FormField
-            label="Tên tour *"
-            value={formData.tourTitle}
-            onChange={(v) => update("tourTitle", v)}
-            placeholder="VD: Tour Ẩm Thực Phố Cổ Hà Nội"
-          />
-          <FormField
-            label="Thời lượng (giờ)"
-            value={formData.durationHours}
-            onChange={(v) => update("durationHours", v)}
-            type="number"
-          />
-        </div>
-        <FormTextarea
-          label="Mô tả ngắn"
-          value={formData.shortDescription}
-          onChange={(v) => update("shortDescription", v)}
-          placeholder="Giới thiệu ngắn về tour..."
-        />
-      </div>
-    );
-
-  if (step === 2)
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Tên địa điểm *"
-            value={formData.locationName}
-            onChange={(v) => update("locationName", v)}
-            placeholder="VD: Nhà Hát Lớn Hà Nội"
-          />
-          <FormField
-            label="Thành phố"
-            value={formData.city}
-            onChange={(v) => update("city", v)}
-            placeholder="VD: Hà Nội"
-          />
-          <FormField
-            label="Quận / Huyện"
-            value={formData.district}
-            onChange={(v) => update("district", v)}
-            placeholder="VD: Hoàn Kiếm"
-          />
-          <FormField
-            label="Điểm hẹn"
-            value={formData.meetingPoint}
-            onChange={(v) => update("meetingPoint", v)}
-            placeholder="VD: Cổng chính"
-          />
-        </div>
-        <FormField
-          label="Địa chỉ"
-          value={formData.address}
-          onChange={(v) => update("address", v)}
-          placeholder="Số nhà, đường..."
-        />
-      </div>
-    );
-
-  if (step === 3)
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Số người tối thiểu"
-            value={formData.minParticipants}
-            onChange={(v) => update("minParticipants", v)}
-            type="number"
-          />
-          <FormField
-            label="Số người tối đa"
-            value={formData.maxParticipants}
-            onChange={(v) => update("maxParticipants", v)}
-            type="number"
-          />
-        </div>
-        <FormTextarea
-          label="Giới hạn độ tuổi / Điều kiện tham gia"
-          value={formData.ageRestrictions}
-          onChange={(v) => update("ageRestrictions", v)}
-          placeholder="VD: Phù hợp trẻ em từ 6 tuổi..."
-        />
-        <FormTextarea
-          label="Cần mang theo"
-          value={formData.whatToBring}
-          onChange={(v) => update("whatToBring", v)}
-          placeholder="VD: Kem chống nắng, mũ, máy ảnh..."
-        />
-      </div>
-    );
-
-  if (step === 4)
-    return (
-      <div className="space-y-5">
-        <TagInput
-          label="Bao gồm"
-          tags={formData.includes}
-          onChange={(v) => update("includes", v)}
-          placeholder="Nhập và nhấn Enter..."
-        />
-        <TagInput
-          label="Không bao gồm"
-          tags={formData.excludes}
-          onChange={(v) => update("excludes", v)}
-          placeholder="Nhập và nhấn Enter..."
-        />
-      </div>
-    );
-
-  if (step === 5)
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Giá người lớn (₫)"
-            value={formData.pricePerAdult}
-            onChange={(v) => update("pricePerAdult", v)}
-            type="number"
-          />
-          <FormField
-            label="Giá trẻ em (₫)"
-            value={formData.pricePerChild}
-            onChange={(v) => update("pricePerChild", v)}
-            type="number"
-          />
-          <FormField
-            label="Giá em bé (₫)"
-            value={formData.pricePerInfant}
-            onChange={(v) => update("pricePerInfant", v)}
-            type="number"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Chính sách hủy
-          </label>
-          <select
-            value={formData.cancellationPolicy}
-            onChange={(e) => update("cancellationPolicy", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-          >
-            <option value="flexible">Linh hoạt</option>
-            <option value="moderate">Vừa phải</option>
-            <option value="strict">Nghiêm ngặt</option>
-          </select>
-        </div>
-      </div>
-    );
-
-  if (step === 6)
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Hình ảnh tour
-        </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-500 text-sm">
-          <Camera className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-          Kéo thả hoặc nhấn để tải lên hình ảnh
-        </div>
-      </div>
-    );
-
-  return null;
-};
-
-/* ═══════════════════════════════════════════
-   CAR RENTAL STEPS
-═══════════════════════════════════════════ */
-const CAR_STEPS = [
-  { id: 1, title: "Định nghĩa Depot", icon: MapPin },
-  { id: 2, title: "Mẫu xe (Hạng xe)", icon: Car },
-  { id: 3, title: "Phân bổ kho xe", icon: Package },
-  { id: 4, title: "Xác nhận & Đăng", icon: CheckCircle },
-];
-
-const CarForm = ({ step, formData, update }) => {
-  const addDepot = () => {
-    const id = Date.now();
-    update("depots", [
-      ...formData.depots,
-      {
-        id,
-        name: "",
-        address: "",
-        contact: "",
-        openingHours: "08:00 - 20:00",
-        isPrimary: false,
-      },
-    ]);
-  };
-  const removeDepot = (id) =>
-    update(
-      "depots",
-      formData.depots.filter((d) => d.id !== id),
-    );
-  const updateDepot = (id, field, val) =>
-    update(
-      "depots",
-      formData.depots.map((d) => (d.id === id ? { ...d, [field]: val } : d)),
-    );
-
-  const addFleet = () => {
-    const id = Date.now();
-    update("fleetTemplates", [
-      ...formData.fleetTemplates,
-      {
-        id,
-        brand: "",
-        model: "",
-        year: 2026,
-        category: "Economy",
-        seats: 5,
-        transmissionType: "automatic",
-        fuelType: "petrol",
-        features: [],
-        basePricePerDay: 0,
-        minRentalHours: 4,
-        maxRentalDays: 30,
-        fuelPolicy: "Full-to-Full",
-        lateReturnFeePerHour: 0,
-        cleaningFee: 0,
-        smokingPenalty: 0,
-      },
-    ]);
-  };
-  const removeFleet = (id) =>
-    update(
-      "fleetTemplates",
-      formData.fleetTemplates.filter((t) => t.id !== id),
-    );
-  const updateFleet = (id, field, val) =>
-    update(
-      "fleetTemplates",
-      formData.fleetTemplates.map((t) =>
-        t.id === id ? { ...t, [field]: val } : t,
-      ),
-    );
-
-  const updateInventory = (depotId, templateId, qty) => {
-    const filtered = formData.depotInventories.filter(
-      (i) => !(i.depotId === depotId && i.templateId === templateId),
-    );
-    if (qty > 0)
-      update("depotInventories", [
-        ...filtered,
-        { depotId, templateId, quantity: qty },
-      ]);
-    else update("depotInventories", filtered);
-  };
-  const getQty = (depotId, templateId) =>
-    formData.depotInventories.find(
-      (i) => i.depotId === depotId && i.templateId === templateId,
-    )?.quantity || 0;
-
-  if (step === 1)
-    return (
-      <div className="space-y-4">
-        {formData.depots.map((depot) => (
-          <div
-            key={depot.id}
-            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium text-gray-800">Depot</h4>
-                {depot.isPrimary && (
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                    Chính
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={depot.isPrimary}
-                    onChange={(e) =>
-                      updateDepot(depot.id, "isPrimary", e.target.checked)
-                    }
-                    className="rounded"
-                  />
-                  Depot chính
-                </label>
-                {formData.depots.length > 1 && (
-                  <button
-                    onClick={() => removeDepot(depot.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <FormField
-                label="Tên Depot *"
-                value={depot.name}
-                onChange={(v) => updateDepot(depot.id, "name", v)}
-                placeholder="VD: Sân bay Tân Sơn Nhất"
-              />
-              <FormField
-                label="Giờ hoạt động"
-                value={depot.openingHours}
-                onChange={(v) => updateDepot(depot.id, "openingHours", v)}
-                placeholder="VD: 08:00 - 20:00"
-              />
-              <FormField
-                label="Địa chỉ *"
-                value={depot.address}
-                onChange={(v) => updateDepot(depot.id, "address", v)}
-                placeholder="Địa chỉ đầy đủ"
-              />
-              <FormField
-                label="Số điện thoại"
-                value={depot.contact}
-                onChange={(v) => updateDepot(depot.id, "contact", v)}
-                placeholder="+84..."
-              />
-            </div>
-          </div>
-        ))}
-        <button
-          onClick={addDepot}
-          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
-        >
-          <Plus className="w-4 h-4" /> Thêm Depot
-        </button>
-      </div>
-    );
-
-  if (step === 2)
-    return (
-      <div className="space-y-4">
-        {formData.fleetTemplates.map((tmpl) => (
-          <div
-            key={tmpl.id}
-            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-800">Hạng xe</h4>
-              {formData.fleetTemplates.length > 1 && (
-                <button
-                  onClick={() => removeFleet(tmpl.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <FormField
-                label="Hãng xe"
-                value={tmpl.brand}
-                onChange={(v) => updateFleet(tmpl.id, "brand", v)}
-                placeholder="VD: Toyota"
-              />
-              <FormField
-                label="Mẫu xe"
-                value={tmpl.model}
-                onChange={(v) => updateFleet(tmpl.id, "model", v)}
-                placeholder="VD: Vios"
-              />
-              <FormField
-                label="Năm sản xuất"
-                value={tmpl.year}
-                onChange={(v) => updateFleet(tmpl.id, "year", v)}
-                type="number"
-              />
-              <FormField
-                label="Số chỗ ngồi"
-                value={tmpl.seats}
-                onChange={(v) => updateFleet(tmpl.id, "seats", v)}
-                type="number"
-              />
-              <FormField
-                label="Giá/ngày (₫)"
-                value={tmpl.basePricePerDay}
-                onChange={(v) => updateFleet(tmpl.id, "basePricePerDay", v)}
-                type="number"
-              />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phân loại
-                </label>
-                <select
-                  value={tmpl.category}
-                  onChange={(e) =>
-                    updateFleet(tmpl.id, "category", e.target.value)
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-                >
-                  <option value="Economy">Economy</option>
-                  <option value="Compact">Compact</option>
-                  <option value="SUV">SUV</option>
-                  <option value="Luxury">Luxury</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hộp số
-                </label>
-                <select
-                  value={tmpl.transmissionType}
-                  onChange={(e) =>
-                    updateFleet(tmpl.id, "transmissionType", e.target.value)
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-                >
-                  <option value="automatic">Tự động</option>
-                  <option value="manual">Số sàn</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nhiên liệu
-                </label>
-                <select
-                  value={tmpl.fuelType}
-                  onChange={(e) =>
-                    updateFleet(tmpl.id, "fuelType", e.target.value)
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-                >
-                  <option value="petrol">Xăng</option>
-                  <option value="diesel">Dầu</option>
-                  <option value="electric">Điện</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        ))}
-        <button
-          onClick={addFleet}
-          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
-        >
-          <Plus className="w-4 h-4" /> Thêm hạng xe
-        </button>
-      </div>
-    );
-
-  if (step === 3)
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Nhập số lượng xe cho từng hạng tại mỗi Depot.
-        </p>
-        {formData.depots.map((depot) => (
-          <div
-            key={depot.id}
-            className="border border-gray-200 rounded-xl p-5 bg-gray-50"
-          >
-            <h4 className="font-medium text-gray-800 mb-3">
-              {depot.name || "Depot chưa đặt tên"}
-            </h4>
-            <div className="space-y-2">
-              {formData.fleetTemplates.map((tmpl) => (
-                <div
-                  key={tmpl.id}
-                  className="flex items-center justify-between bg-white border border-gray-100 rounded-lg px-4 py-2"
-                >
-                  <span className="text-sm text-gray-700">
-                    {tmpl.brand} {tmpl.model} ({tmpl.category})
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={getQty(depot.id, tmpl.id)}
-                    onChange={(e) =>
-                      updateInventory(
-                        depot.id,
-                        tmpl.id,
-                        parseInt(e.target.value) || 0,
-                      )
-                    }
-                    className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="0"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-
-  return null;
-};
+import { serviceService } from "../../services/serviceService";
 
 /* ═══════════════════════════════════════════
    SHARED COMPONENTS
 ═══════════════════════════════════════════ */
-const FormField = ({ label, value, onChange, type = "text", placeholder }) => (
+const FormField = ({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required,
+}) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
-      {label}
+      {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
       type={type}
@@ -804,7 +43,7 @@ const FormField = ({ label, value, onChange, type = "text", placeholder }) => (
   </div>
 );
 
-const FormTextarea = ({ label, value, onChange, placeholder }) => (
+const FormTextarea = ({ label, value, onChange, placeholder, rows = 3 }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
       {label}
@@ -813,17 +52,37 @@ const FormTextarea = ({ label, value, onChange, placeholder }) => (
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      rows={3}
+      rows={rows}
       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary resize-none"
     />
+  </div>
+);
+
+const FormSelect = ({ label, value, onChange, options }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      {label}
+    </label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   </div>
 );
 
 const TagInput = ({ label, tags, onChange, placeholder }) => {
   const [input, setInput] = useState("");
   const addTag = () => {
-    if (input.trim() && !tags.includes(input.trim())) {
-      onChange([...tags, input.trim()]);
+    const v = input.trim();
+    if (v && !tags.includes(v)) {
+      onChange([...tags, v]);
       setInput("");
     }
   };
@@ -867,19 +126,744 @@ const TagInput = ({ label, tags, onChange, placeholder }) => {
   );
 };
 
+const LocationSelect = ({ label, value, onChange, destinations }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      {label}
+    </label>
+    {destinations.length > 0 ? (
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+      >
+        <option value="">-- Chọn địa điểm --</option>
+        {destinations.map((d) => (
+          <option key={d.destinationId} value={d.destinationId}>
+            {d.name} {d.city ? `– ${d.city}` : ""}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Nhập Location ID (UUID)"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+      />
+    )}
+  </div>
+);
+
+/* ═══════════════════════════════════════════
+   HOMESTAY STEPS
+═══════════════════════════════════════════ */
+const HOMESTAY_STEPS = [
+  { id: 1, title: "Thông tin cơ bản", icon: Home },
+  { id: 2, title: "Loại phòng", icon: Bed },
+  { id: 3, title: "Khung thời gian", icon: Clock },
+  { id: 4, title: "Xác nhận & Đăng", icon: CheckCircle },
+];
+
+const ROOM_AMENITIES = [
+  "WiFi",
+  "Điều hòa",
+  "Bếp",
+  "Tủ lạnh",
+  "TV",
+  "Máy sấy tóc",
+  "Ban công",
+  "View núi",
+  "View biển",
+  "Phòng tắm riêng",
+];
+
+const HomestayForm = ({
+  step,
+  data,
+  update,
+  updateRoom,
+  addRoom,
+  removeRoom,
+}) => {
+  if (step === 1)
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Tên homestay"
+            value={data.title}
+            onChange={(v) => update("title", v)}
+            placeholder="VD: Sapa Cloud Homestay"
+            required
+          />
+          <FormField
+            label="Số điện thoại liên hệ"
+            value={data.phoneNumber}
+            onChange={(v) => update("phoneNumber", v)}
+            placeholder="+84..."
+          />
+          <FormField
+            label="Thành phố"
+            value={data.city}
+            onChange={(v) => update("city", v)}
+            placeholder="VD: Lào Cai"
+            required
+          />
+          <FormField
+            label="Quận / Huyện"
+            value={data.district}
+            onChange={(v) => update("district", v)}
+            placeholder="VD: Sa Pa"
+          />
+          <FormField
+            label="Phường / Xã"
+            value={data.ward}
+            onChange={(v) => update("ward", v)}
+            placeholder="VD: Sa Pa Ward"
+          />
+          <FormField
+            label="Mã bưu chính"
+            value={data.postalCode}
+            onChange={(v) => update("postalCode", v)}
+            placeholder="VD: 330000"
+          />
+          <FormField
+            label="Địa chỉ"
+            value={data.address}
+            onChange={(v) => update("address", v)}
+            placeholder="Số nhà, đường..."
+            required
+          />
+          <FormField
+            label="Giờ hoạt động"
+            value={data.openingHours}
+            onChange={(v) => update("openingHours", v)}
+            placeholder="VD: 24/7"
+          />
+          <FormField
+            label="Giờ nhận phòng"
+            value={data.checkInTime}
+            onChange={(v) => update("checkInTime", v)}
+            type="time"
+          />
+          <FormField
+            label="Giờ trả phòng"
+            value={data.checkOutTime}
+            onChange={(v) => update("checkOutTime", v)}
+            type="time"
+          />
+        </div>
+        <FormTextarea
+          label="Mô tả"
+          value={data.description}
+          onChange={(v) => update("description", v)}
+          placeholder="Mô tả ngắn về homestay của bạn..."
+          rows={4}
+        />
+        <FormTextarea
+          label="Nội quy"
+          value={data.houseRules}
+          onChange={(v) => update("houseRules", v)}
+          placeholder="Quy định hút thuốc, thú cưng, tiệc tùng..."
+        />
+        <FormTextarea
+          label="Chính sách hủy"
+          value={data.cancellationPolicy}
+          onChange={(v) => update("cancellationPolicy", v)}
+          placeholder="VD: Hoàn tiền 100% nếu hủy trước 48 giờ..."
+        />
+      </div>
+    );
+
+  if (step === 2)
+    return (
+      <div className="space-y-4">
+        {data.rooms.map((room, idx) => (
+          <div
+            key={idx}
+            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-800">
+                Loại phòng #{idx + 1}
+              </h4>
+              {data.rooms.length > 1 && (
+                <button
+                  onClick={() => removeRoom(idx)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <FormField
+                label="Tên phòng *"
+                value={room.roomName}
+                onChange={(v) => updateRoom(idx, "roomName", v)}
+                placeholder="VD: Phòng Deluxe"
+              />
+              <FormField
+                label="Loại giường"
+                value={room.bedType}
+                onChange={(v) => updateRoom(idx, "bedType", v)}
+                placeholder="VD: Queen"
+              />
+              <FormField
+                label="Số giường"
+                value={room.bedCount}
+                onChange={(v) => updateRoom(idx, "bedCount", v)}
+                type="number"
+              />
+              <FormField
+                label="Số khách tối đa"
+                value={room.maxOccupancy}
+                onChange={(v) => updateRoom(idx, "maxOccupancy", v)}
+                type="number"
+              />
+              <FormField
+                label="Diện tích (m²)"
+                value={room.roomSizeSqm}
+                onChange={(v) => updateRoom(idx, "roomSizeSqm", v)}
+                type="number"
+              />
+              <FormField
+                label="Số phòng loại này"
+                value={room.numberOfRooms}
+                onChange={(v) => updateRoom(idx, "numberOfRooms", v)}
+                type="number"
+              />
+              <FormField
+                label="Giá cơ bản (₫/đêm) *"
+                value={room.basePrice}
+                onChange={(v) => updateRoom(idx, "basePrice", v)}
+                type="number"
+              />
+              <FormField
+                label="Giá cuối tuần (₫/đêm)"
+                value={room.weekendPrice}
+                onChange={(v) => updateRoom(idx, "weekendPrice", v)}
+                type="number"
+              />
+              <FormField
+                label="Giá lễ tết (₫/đêm)"
+                value={room.holidayPrice}
+                onChange={(v) => updateRoom(idx, "holidayPrice", v)}
+                type="number"
+              />
+              <div>
+                <label className="flex items-center gap-2 mt-5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={room.privateBathroom}
+                    onChange={(e) =>
+                      updateRoom(idx, "privateBathroom", e.target.checked)
+                    }
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Phòng tắm riêng
+                  </span>
+                </label>
+              </div>
+            </div>
+            <FormTextarea
+              label="Mô tả phòng"
+              value={room.roomDescription}
+              onChange={(v) => updateRoom(idx, "roomDescription", v)}
+              placeholder="Mô tả phòng..."
+              rows={2}
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tiện nghi phòng
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {ROOM_AMENITIES.map((a) => (
+                  <label
+                    key={a}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={room.roomAmenities.includes(a)}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...room.roomAmenities, a]
+                          : room.roomAmenities.filter((x) => x !== a);
+                        updateRoom(idx, "roomAmenities", next);
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{a}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={addRoom}
+          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
+        >
+          <Plus className="w-4 h-4" /> Thêm loại phòng
+        </button>
+      </div>
+    );
+
+  if (step === 3)
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Cài đặt khung thời gian có phòng. Sẽ áp dụng cho tất cả các loại
+          phòng.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Ngày bắt đầu *"
+            value={data.availStartDate}
+            onChange={(v) => update("availStartDate", v)}
+            type="date"
+          />
+          <FormField
+            label="Ngày kết thúc *"
+            value={data.availEndDate}
+            onChange={(v) => update("availEndDate", v)}
+            type="date"
+          />
+          <FormField
+            label="Giá mặc định (₫/đêm)"
+            value={data.availDefaultPrice}
+            onChange={(v) => update("availDefaultPrice", v)}
+            type="number"
+            placeholder="0"
+          />
+          <FormField
+            label="Số đêm tối thiểu"
+            value={data.availMinNights}
+            onChange={(v) => update("availMinNights", v)}
+            type="number"
+            placeholder="1"
+          />
+        </div>
+      </div>
+    );
+
+  return null;
+};
+
+/* ═══════════════════════════════════════════
+   TOUR STEPS
+═══════════════════════════════════════════ */
+const TOUR_STEPS = [
+  { id: 1, title: "Thông tin tour", icon: Compass },
+  { id: 2, title: "Chi tiết", icon: List },
+  { id: 3, title: "Lịch trình", icon: Clock },
+  { id: 4, title: "Hành trình", icon: MapPin },
+  { id: 5, title: "Xác nhận & Đăng", icon: CheckCircle },
+];
+
+const TOUR_TYPES = [
+  { value: "0", label: "Văn hóa" },
+  { value: "1", label: "Ẩm thực" },
+  { value: "2", label: "Phiêu lưu" },
+  { value: "3", label: "Thiên nhiên" },
+  { value: "4", label: "Thành phố" },
+];
+
+const DIFFICULTY_LEVELS = [
+  { value: "0", label: "Dễ" },
+  { value: "1", label: "Vừa" },
+  { value: "2", label: "Khó" },
+];
+
+const TourForm = ({
+  step,
+  data,
+  update,
+  updateSchedule,
+  addSchedule,
+  removeSchedule,
+  updateItinerary,
+  addItinerary,
+  removeItinerary,
+  destinations,
+}) => {
+  if (step === 1)
+    return (
+      <div className="space-y-4">
+        <FormField
+          label="Tên tour *"
+          value={data.title}
+          onChange={(v) => update("title", v)}
+          placeholder="VD: Tour Ẩm Thực Phố Cổ Hà Nội"
+        />
+        <FormTextarea
+          label="Mô tả"
+          value={data.description}
+          onChange={(v) => update("description", v)}
+          placeholder="Giới thiệu ngắn về tour..."
+          rows={4}
+        />
+        <LocationSelect
+          label="Điểm đến *"
+          value={data.destinationId}
+          onChange={(v) => update("destinationId", v)}
+          destinations={destinations}
+        />
+      </div>
+    );
+
+  if (step === 2)
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormSelect
+            label="Loại tour"
+            value={data.tourType}
+            onChange={(v) => update("tourType", v)}
+            options={TOUR_TYPES}
+          />
+          <FormSelect
+            label="Độ khó"
+            value={data.difficultyLevel}
+            onChange={(v) => update("difficultyLevel", v)}
+            options={DIFFICULTY_LEVELS}
+          />
+          <FormField
+            label="Thời lượng (giờ)"
+            value={data.durationHours}
+            onChange={(v) => update("durationHours", v)}
+            type="number"
+          />
+          <FormField
+            label="Số người tối thiểu"
+            value={data.minParticipants}
+            onChange={(v) => update("minParticipants", v)}
+            type="number"
+          />
+          <FormField
+            label="Số người tối đa"
+            value={data.maxParticipants}
+            onChange={(v) => update("maxParticipants", v)}
+            type="number"
+          />
+          <FormField
+            label="Giới hạn độ tuổi"
+            value={data.ageRestrictions}
+            onChange={(v) => update("ageRestrictions", v)}
+            placeholder="VD: 12+"
+          />
+        </div>
+        <TagInput
+          label="Bao gồm"
+          tags={data.includes}
+          onChange={(v) => update("includes", v)}
+          placeholder="Nhập và nhấn Enter..."
+        />
+        <TagInput
+          label="Không bao gồm"
+          tags={data.excludes}
+          onChange={(v) => update("excludes", v)}
+          placeholder="Nhập và nhấn Enter..."
+        />
+        <FormTextarea
+          label="Cần mang theo"
+          value={data.whatToBring}
+          onChange={(v) => update("whatToBring", v)}
+          placeholder="VD: Kem chống nắng, mũ, máy ảnh..."
+        />
+        <FormTextarea
+          label="Yêu cầu thể lực"
+          value={data.fitnessRequirements}
+          onChange={(v) => update("fitnessRequirements", v)}
+          placeholder="VD: Cần sức khỏe tốt cơ bản..."
+        />
+        <FormTextarea
+          label="Chính sách hủy"
+          value={data.cancellationPolicy}
+          onChange={(v) => update("cancellationPolicy", v)}
+          placeholder="VD: Hủy trước 48 giờ được hoàn tiền..."
+        />
+      </div>
+    );
+
+  if (step === 3)
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Thêm các ngày khởi hành. Mỗi ngày là một lịch trình riêng.
+        </p>
+        {data.schedules.map((s, idx) => (
+          <div
+            key={idx}
+            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-800">
+                Lịch trình #{idx + 1}
+              </h4>
+              {data.schedules.length > 1 && (
+                <button
+                  onClick={() => removeSchedule(idx)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <FormField
+                label="Ngày khởi hành *"
+                value={s.tourDate}
+                onChange={(v) => updateSchedule(idx, "tourDate", v)}
+                type="date"
+              />
+              <FormField
+                label="Giá (₫/người) *"
+                value={s.price}
+                onChange={(v) => updateSchedule(idx, "price", v)}
+                type="number"
+              />
+              <FormField
+                label="Giờ bắt đầu"
+                value={s.startTime}
+                onChange={(v) => updateSchedule(idx, "startTime", v)}
+                type="time"
+              />
+              <FormField
+                label="Giờ kết thúc"
+                value={s.endTime}
+                onChange={(v) => updateSchedule(idx, "endTime", v)}
+                type="time"
+              />
+              <FormField
+                label="Số chỗ trống"
+                value={s.availableSlots}
+                onChange={(v) => updateSchedule(idx, "availableSlots", v)}
+                type="number"
+              />
+              <FormField
+                label="Điểm hẹn"
+                value={s.meetingPoint}
+                onChange={(v) => updateSchedule(idx, "meetingPoint", v)}
+                placeholder="VD: Cổng chính"
+              />
+              <FormField
+                label="ID Hướng dẫn viên (tùy chọn)"
+                value={s.guideId}
+                onChange={(v) => updateSchedule(idx, "guideId", v)}
+                placeholder="GUIDE-..."
+              />
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={addSchedule}
+          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
+        >
+          <Plus className="w-4 h-4" /> Thêm lịch trình
+        </button>
+      </div>
+    );
+
+  if (step === 4)
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Mô tả các điểm dừng và hoạt động trong tour.
+        </p>
+        {data.itinerary.map((item, idx) => (
+          <div
+            key={idx}
+            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-800">
+                Điểm #{item.stepOrder}
+              </h4>
+              {data.itinerary.length > 1 && (
+                <button
+                  onClick={() => removeItinerary(idx)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <FormField
+                label="Địa điểm *"
+                value={item.location}
+                onChange={(v) => updateItinerary(idx, "location", v)}
+                placeholder="VD: Ba Na Hills"
+              />
+              <FormField
+                label="Thời gian (phút)"
+                value={item.durationMinutes}
+                onChange={(v) => updateItinerary(idx, "durationMinutes", v)}
+                type="number"
+              />
+              <div className="md:col-span-2">
+                <FormField
+                  label="Hoạt động *"
+                  value={item.activity}
+                  onChange={(v) => updateItinerary(idx, "activity", v)}
+                  placeholder="VD: Cáp treo và tham quan"
+                />
+              </div>
+            </div>
+            <FormTextarea
+              label="Mô tả"
+              value={item.description}
+              onChange={(v) => updateItinerary(idx, "description", v)}
+              placeholder="Chi tiết hoạt động..."
+              rows={2}
+            />
+          </div>
+        ))}
+        <button
+          onClick={addItinerary}
+          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
+        >
+          <Plus className="w-4 h-4" /> Thêm điểm dừng
+        </button>
+      </div>
+    );
+
+  return null;
+};
+
+/* ═══════════════════════════════════════════
+   OTHER / NEWS POST FORM (single page)
+═══════════════════════════════════════════ */
+const OtherPostForm = ({
+  data,
+  update,
+  destinations,
+  onSubmit,
+  publishing,
+  publishError,
+}) => (
+  <div className="min-h-screen bg-bg-light p-6">
+    <div className="max-w-2xl mx-auto">
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => window.history.back()}
+          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bài đăng mới</h1>
+          <p className="text-gray-500 text-sm">
+            Chia sẻ sự kiện, tin tức hoặc dịch vụ đặc biệt
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
+        <FormField
+          label="Tiêu đề bài đăng *"
+          value={data.title}
+          onChange={(v) => update("title", v)}
+          placeholder="Tiêu đề hấp dẫn..."
+          required
+        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nội dung *
+          </label>
+          <textarea
+            value={data.description}
+            onChange={(e) => update("description", e.target.value)}
+            placeholder="Chia sẻ thông tin chi tiết về sự kiện hoặc dịch vụ của bạn..."
+            rows={8}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+          />
+        </div>
+        <LocationSelect
+          label="Điểm đến"
+          value={data.destinationId}
+          onChange={(v) => update("destinationId", v)}
+          destinations={destinations}
+        />
+        <FormField
+          label="Phí nền tảng (₫)"
+          value={data.platformFeeAmount}
+          onChange={(v) => update("platformFeeAmount", v)}
+          type="number"
+          placeholder="0"
+        />
+
+        {publishError && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            {publishError}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            onClick={() => window.history.back()}
+            className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={publishing || !data.title || !data.description}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {publishing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
+            {publishing ? "Đang đăng..." : "Đăng bài"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 /* ═══════════════════════════════════════════
    CONFIRM PANEL
 ═══════════════════════════════════════════ */
-const ConfirmPanel = ({ serviceType, formData }) => {
-  const typeLabel = { rental: "Cho thuê", tour: "Tour", car: "Thuê xe" }[
-    serviceType
-  ];
-  const title =
-    formData.propertyName ||
-    formData.tourTitle ||
-    formData.depots?.[0]?.name ||
-    "Chưa đặt tên";
-  const location = formData.city || formData.locationName || "Chưa có địa chỉ";
+const ConfirmPanel = ({
+  serviceType,
+  homestayData,
+  tourData,
+  publishError,
+}) => {
+  const summaryItems =
+    serviceType === "homestay"
+      ? [
+          { label: "Tên homestay", value: homestayData.title || "—" },
+          {
+            label: "Địa chỉ",
+            value:
+              `${homestayData.address || ""}, ${homestayData.city || ""}`
+                .trim()
+                .replace(/^,\s*/, "") || "—",
+          },
+          { label: "Số loại phòng", value: homestayData.rooms.length },
+          { label: "Nhận phòng", value: homestayData.checkInTime || "—" },
+        ]
+      : [
+          { label: "Tên tour", value: tourData.title || "—" },
+          {
+            label: "Thời lượng",
+            value: tourData.durationHours
+              ? `${tourData.durationHours} giờ`
+              : "—",
+          },
+          { label: "Số lịch trình", value: tourData.schedules.length },
+          { label: "Số điểm hành trình", value: tourData.itinerary.length },
+        ];
 
   return (
     <div className="space-y-4">
@@ -890,182 +874,229 @@ const ConfirmPanel = ({ serviceType, formData }) => {
             Sẵn sàng đăng dịch vụ
           </h3>
         </div>
-        <div className="space-y-1 text-sm text-green-700">
-          <p>
-            <span className="font-medium">Loại dịch vụ:</span> {typeLabel}
-          </p>
-          <p>
-            <span className="font-medium">Tên:</span> {title}
-          </p>
-          <p>
-            <span className="font-medium">Địa điểm:</span> {location}
-          </p>
-          {serviceType === "rental" && (
-            <p>
-              <span className="font-medium">Số loại phòng:</span>{" "}
-              {formData.roomTypes?.length}
+        <div className="space-y-1.5 text-sm text-green-700">
+          {summaryItems.map((item) => (
+            <p key={item.label}>
+              <span className="font-medium">{item.label}:</span> {item.value}
             </p>
-          )}
-          {serviceType === "tour" && (
-            <p>
-              <span className="font-medium">Thời lượng:</span>{" "}
-              {formData.durationHours} giờ
-            </p>
-          )}
-          {serviceType === "car" && (
-            <p>
-              <span className="font-medium">Số depot:</span>{" "}
-              {formData.depots?.length} | Hạng xe:{" "}
-              {formData.fleetTemplates?.length}
-            </p>
-          )}
+          ))}
         </div>
       </div>
       <p className="text-sm text-gray-600">
         Sau khi đăng, dịch vụ sẽ được gửi đến quản lý để xét duyệt trước khi
         hiển thị công khai.
       </p>
+      {publishError && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          {publishError}
+        </div>
+      )}
     </div>
   );
 };
 
-/* MAIN COMPONENT*/
+/* ═══════════════════════════════════════════
+   STEP INDICATOR
+═══════════════════════════════════════════ */
+const StepIndicator = ({ steps, currentStep }) => (
+  <div className="flex items-center mb-8 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+    {steps.map((s, idx) => {
+      const Icon = s.icon;
+      const isActive = currentStep === s.id;
+      const isDone = currentStep > s.id;
+      return (
+        <React.Fragment key={s.id}>
+          <div className="flex flex-col items-center flex-1">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${isDone ? "bg-green-500 text-white" : isActive ? "bg-primary text-white" : "bg-gray-100 text-gray-400"}`}
+            >
+              {isDone ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <Icon className="w-5 h-5" />
+              )}
+            </div>
+            <span
+              className={`text-xs text-center hidden md:block ${isActive ? "text-primary font-medium" : "text-gray-400"}`}
+            >
+              {s.title}
+            </span>
+          </div>
+          {idx < steps.length - 1 && (
+            <div
+              className={`h-0.5 flex-1 mx-1 ${currentStep > s.id ? "bg-green-400" : "bg-gray-200"}`}
+            />
+          )}
+        </React.Fragment>
+      );
+    })}
+  </div>
+);
+
+/* ═══════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════ */
 const PartnerServiceRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const [serviceType] = useState(location.state?.type || null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
+  const [destinations, setDestinations] = useState([]);
 
   useEffect(() => {
     if (!serviceType) navigate("/PartnerService", { replace: true });
   }, [serviceType, navigate]);
 
-  // Rental data
-  const [rentalData, setRentalData] = useState({
-    propertyName: "",
-    description: "",
-    address: "",
-    city: "",
-    district: "",
-    ward: "",
-    checkInTime: "14:00",
-    checkOutTime: "11:00",
-    cancellationPolicy: "",
-    houseRules: "",
-    images: [],
-    amenities: [],
-    roomTypes: [
-      {
-        roomName: "",
-        bedType: "Queen Bed",
-        maxOccupancy: 2,
-        basePrice: 0,
-        weekendPrice: 0,
-        numberOfRooms: 1,
-      },
-    ],
-  });
+  useEffect(() => {
+    serviceService
+      .getDestinations()
+      .then((data) =>
+        setDestinations(
+          Array.isArray(data) ? data : data.items || data.data || [],
+        ),
+      )
+      .catch(() => setDestinations([]));
+  }, []);
 
-  // Tour data
-  const [tourData, setTourData] = useState({
-    tourType: "cultural",
-    tourTitle: "",
-    shortDescription: "",
-    durationHours: 4,
-    difficultyLevel: "easy",
+  /* --- Homestay state --- */
+  const [homestayData, setHomestayData] = useState({
+    title: "",
+    description: "",
     locationName: "",
     address: "",
     city: "",
     district: "",
-    meetingPoint: "",
-    minParticipants: 2,
-    maxParticipants: 10,
-    ageRestrictions: "",
-    whatToBring: "",
-    includes: [],
-    excludes: [],
-    pricePerAdult: "",
-    pricePerChild: "",
-    pricePerInfant: "0",
-    cancellationPolicy: "flexible",
-    images: [],
-    itinerary: [{ id: 1, time: "", title: "", description: "" }],
-  });
-
-  // Car data
-  const [carData, setCarData] = useState({
-    depots: [
+    ward: "",
+    postalCode: "",
+    latitude: "",
+    longitude: "",
+    phoneNumber: "",
+    openingHours: "24/7",
+    checkInTime: "14:00",
+    checkOutTime: "12:00",
+    cancellationPolicy: "",
+    houseRules: "",
+    availStartDate: "",
+    availEndDate: "",
+    availDefaultPrice: "",
+    availMinNights: "1",
+    rooms: [
       {
-        id: 1,
-        name: "",
-        address: "",
-        contact: "",
-        openingHours: "08:00 - 20:00",
-        isPrimary: true,
+        roomName: "",
+        roomDescription: "",
+        bedType: "Queen",
+        bedCount: 1,
+        maxOccupancy: 2,
+        roomSizeSqm: "",
+        privateBathroom: true,
+        basePrice: "",
+        weekendPrice: "",
+        holidayPrice: "",
+        roomAmenities: [],
+        numberOfRooms: 1,
       },
     ],
-    fleetTemplates: [
-      {
-        id: 1,
-        brand: "Toyota",
-        model: "Vios",
-        year: 2026,
-        category: "Economy",
-        seats: 5,
-        transmissionType: "automatic",
-        fuelType: "petrol",
-        basePricePerDay: 800000,
-        features: [],
-        minRentalHours: 4,
-        maxRentalDays: 30,
-        fuelPolicy: "Full-to-Full",
-        lateReturnFeePerHour: 0,
-        cleaningFee: 0,
-        smokingPenalty: 0,
-      },
-    ],
-    depotInventories: [],
   });
-
-  const steps =
-    serviceType === "rental"
-      ? RENTAL_STEPS
-      : serviceType === "tour"
-        ? TOUR_STEPS
-        : serviceType === "car"
-          ? CAR_STEPS
-          : [];
-  const isLastStep = currentStep === steps.length;
-
-  const updateRental = (f, v) => setRentalData((p) => ({ ...p, [f]: v }));
-  const updateRentalRoom = (idx, f, v) => {
-    const r = [...rentalData.roomTypes];
+  const updateHomestay = (f, v) => setHomestayData((p) => ({ ...p, [f]: v }));
+  const updateHomestayRoom = (idx, f, v) => {
+    const r = [...homestayData.rooms];
     r[idx] = { ...r[idx], [f]: v };
-    setRentalData((p) => ({ ...p, roomTypes: r }));
+    setHomestayData((p) => ({ ...p, rooms: r }));
   };
   const addRoom = () =>
-    setRentalData((p) => ({
+    setHomestayData((p) => ({
       ...p,
-      roomTypes: [
-        ...p.roomTypes,
+      rooms: [
+        ...p.rooms,
         {
           roomName: "",
-          bedType: "Queen Bed",
+          roomDescription: "",
+          bedType: "Queen",
+          bedCount: 1,
           maxOccupancy: 2,
-          basePrice: 0,
-          weekendPrice: 0,
+          roomSizeSqm: "",
+          privateBathroom: true,
+          basePrice: "",
+          weekendPrice: "",
+          holidayPrice: "",
+          roomAmenities: [],
           numberOfRooms: 1,
         },
       ],
     }));
   const removeRoom = (idx) =>
-    setRentalData((p) => ({
+    setHomestayData((p) => ({
       ...p,
-      roomTypes: p.roomTypes.filter((_, i) => i !== idx),
+      rooms: p.rooms.filter((_, i) => i !== idx),
     }));
 
+  /* --- Tour state --- */
+  const [tourData, setTourData] = useState({
+    title: "",
+    description: "",
+    destinationId: "",
+    tourType: "0",
+    durationHours: "4",
+    difficultyLevel: "0",
+    minParticipants: "2",
+    maxParticipants: "10",
+    includes: [],
+    excludes: [],
+    whatToBring: "",
+    fitnessRequirements: "",
+    cancellationPolicy: "",
+    ageRestrictions: "",
+    schedules: [
+      {
+        tourDate: "",
+        startTime: "08:00",
+        endTime: "17:00",
+        availableSlots: "20",
+        guideId: "",
+        meetingPoint: "",
+        price: "",
+      },
+    ],
+    itinerary: [
+      {
+        stepOrder: 1,
+        location: "",
+        activity: "",
+        durationMinutes: "60",
+        description: "",
+      },
+    ],
+  });
   const updateTour = (f, v) => setTourData((p) => ({ ...p, [f]: v }));
+  const updateSchedule = (idx, f, v) => {
+    const s = [...tourData.schedules];
+    s[idx] = { ...s[idx], [f]: v };
+    setTourData((p) => ({ ...p, schedules: s }));
+  };
+  const addSchedule = () =>
+    setTourData((p) => ({
+      ...p,
+      schedules: [
+        ...p.schedules,
+        {
+          tourDate: "",
+          startTime: "08:00",
+          endTime: "17:00",
+          availableSlots: "20",
+          guideId: "",
+          meetingPoint: "",
+          price: "",
+        },
+      ],
+    }));
+  const removeSchedule = (idx) =>
+    setTourData((p) => ({
+      ...p,
+      schedules: p.schedules.filter((_, i) => i !== idx),
+    }));
   const updateItinerary = (idx, f, v) => {
     const it = [...tourData.itinerary];
     it[idx] = { ...it[idx], [f]: v };
@@ -1076,34 +1107,190 @@ const PartnerServiceRegistration = () => {
       ...p,
       itinerary: [
         ...p.itinerary,
-        { id: Date.now(), time: "", title: "", description: "" },
+        {
+          stepOrder: p.itinerary.length + 1,
+          location: "",
+          activity: "",
+          durationMinutes: "60",
+          description: "",
+        },
       ],
     }));
   const removeItinerary = (idx) =>
     setTourData((p) => ({
       ...p,
-      itinerary: p.itinerary.filter((_, i) => i !== idx),
+      itinerary: p.itinerary
+        .filter((_, i) => i !== idx)
+        .map((item, i) => ({ ...item, stepOrder: i + 1 })),
     }));
 
-  const updateCar = (f, v) => setCarData((p) => ({ ...p, [f]: v }));
+  /* --- Other state --- */
+  const [otherData, setOtherData] = useState({
+    title: "",
+    description: "",
+    destinationId: "",
+    platformFeeAmount: "0",
+  });
+  const updateOther = (f, v) => setOtherData((p) => ({ ...p, [f]: v }));
 
-  const handlePublish = () => {
-    alert("Dịch vụ đã được gửi để xét duyệt!");
-    navigate("/PartnerService");
+  /* --- Publish --- */
+  const handlePublish = async () => {
+    setPublishing(true);
+    setPublishError("");
+    try {
+      if (serviceType === "other") {
+        await serviceService.createPartnerService({
+          destinationId: otherData.destinationId || undefined,
+          serviceType: 2,
+          title: otherData.title,
+          description: otherData.description,
+          platformFeeAmount: Number(otherData.platformFeeAmount) || 0,
+          tourDetails: null,
+        });
+      } else if (serviceType === "tour") {
+        const result = await serviceService.createPartnerService({
+          destinationId: tourData.destinationId || undefined,
+          serviceType: 1,
+          title: tourData.title,
+          description: tourData.description,
+          platformFeeAmount: 0,
+          tourDetails: {
+            tourType: Number(tourData.tourType),
+            durationHours: Number(tourData.durationHours),
+            difficultyLevel: Number(tourData.difficultyLevel),
+            minParticipants: Number(tourData.minParticipants),
+            maxParticipants: Number(tourData.maxParticipants),
+            includes: tourData.includes,
+            excludes: tourData.excludes,
+            whatToBring: tourData.whatToBring,
+            cancellationPolicy: tourData.cancellationPolicy,
+            ageRestrictions: tourData.ageRestrictions,
+            fitnessRequirements: tourData.fitnessRequirements,
+          },
+        });
+        const tourId = result.tourId || result.id;
+        if (tourId) {
+          for (const s of tourData.schedules) {
+            if (!s.tourDate || !s.price) continue;
+            await serviceService.addTourSchedule(tourId, {
+              tourDate: new Date(s.tourDate).toISOString(),
+              startTime: s.startTime || "08:00:00",
+              endTime: s.endTime || "17:00:00",
+              availableSlots: Number(s.availableSlots) || 0,
+              guideId: s.guideId || undefined,
+              meetingPoint: s.meetingPoint || undefined,
+              isActive: true,
+              price: Number(s.price),
+            });
+          }
+          for (const item of tourData.itinerary) {
+            if (!item.location || !item.activity) continue;
+            await serviceService.addTourItinerary(tourId, {
+              stepOrder: item.stepOrder,
+              location: item.location,
+              activity: item.activity,
+              durationMinutes: Number(item.durationMinutes) || 60,
+              description: item.description,
+            });
+          }
+        }
+      } else if (serviceType === "homestay") {
+        const hs = await serviceService.createHomestay({
+          title: homestayData.title,
+          description: homestayData.description,
+          location: {
+            name: homestayData.title,
+            address: homestayData.address,
+            city: homestayData.city,
+            district: homestayData.district,
+            ward: homestayData.ward,
+            postalCode: homestayData.postalCode,
+            latitude: Number(homestayData.latitude) || 0,
+            longitude: Number(homestayData.longitude) || 0,
+            phoneNumber: homestayData.phoneNumber,
+            openingHours: homestayData.openingHours,
+          },
+          checkInTime: `${homestayData.checkInTime}:00`,
+          checkOutTime: `${homestayData.checkOutTime}:00`,
+          cancellationPolicy: homestayData.cancellationPolicy || undefined,
+          houseRules: homestayData.houseRules || undefined,
+        });
+        const homestayId = hs.homestayId || hs.id || hs.serviceId;
+
+        const roomIds = [];
+        for (const room of homestayData.rooms) {
+          if (!room.roomName || !room.basePrice) continue;
+          const rr = await serviceService.addHomestayRoom(homestayId, {
+            roomName: room.roomName,
+            roomDescription: room.roomDescription,
+            maxOccupancy: Number(room.maxOccupancy) || 2,
+            roomSizeSqm: Number(room.roomSizeSqm) || 0,
+            bedType: room.bedType,
+            bedCount: Number(room.bedCount) || 1,
+            privateBathroom: room.privateBathroom,
+            basePrice: Number(room.basePrice),
+            weekendPrice: Number(room.weekendPrice) || Number(room.basePrice),
+            holidayPrice:
+              Number(room.holidayPrice) ||
+              Number(room.weekendPrice) ||
+              Number(room.basePrice),
+            roomAmenities: room.roomAmenities,
+            numberOfRooms: Number(room.numberOfRooms) || 1,
+          });
+          if (rr.roomId || rr.id) roomIds.push(rr.roomId || rr.id);
+        }
+
+        if (
+          homestayData.availStartDate &&
+          homestayData.availEndDate &&
+          roomIds.length > 0
+        ) {
+          await serviceService.bulkHomestayAvailability(homestayId, {
+            startDate: new Date(homestayData.availStartDate).toISOString(),
+            endDate: new Date(homestayData.availEndDate).toISOString(),
+            rooms: roomIds.map((roomId) => ({
+              roomId,
+              defaultPrice: Number(homestayData.availDefaultPrice) || 0,
+              minNights: Number(homestayData.availMinNights) || 1,
+            })),
+            applyToAllDates: true,
+          });
+        }
+
+        await serviceService.submitHomestay(homestayId);
+      }
+
+      navigate("/PartnerService", {
+        state: { message: "Dịch vụ đã được gửi để xét duyệt!" },
+      });
+    } catch (err) {
+      setPublishError(
+        err.message || "Đăng dịch vụ thất bại. Vui lòng thử lại.",
+      );
+    } finally {
+      setPublishing(false);
+    }
   };
 
   if (!serviceType) return null;
 
-  const formData =
-    serviceType === "rental"
-      ? rentalData
-      : serviceType === "tour"
-        ? tourData
-        : carData;
-  const currentStepObj = steps[currentStep - 1];
-  const typeLabel = { rental: "Cho thuê", tour: "Tour", car: "Thuê xe" }[
-    serviceType
-  ];
+  // Render "other" as a standalone simple page
+  if (serviceType === "other") {
+    return (
+      <OtherPostForm
+        data={otherData}
+        update={updateOther}
+        destinations={destinations}
+        onSubmit={handlePublish}
+        publishing={publishing}
+        publishError={publishError}
+      />
+    );
+  }
+
+  const steps = serviceType === "homestay" ? HOMESTAY_STEPS : TOUR_STEPS;
+  const isLastStep = currentStep === steps.length;
+  const typeLabel = serviceType === "homestay" ? "Homestay" : "Tour";
 
   return (
     <div className="min-h-screen bg-bg-light p-6">
@@ -1129,70 +1316,39 @@ const PartnerServiceRegistration = () => {
           </div>
         </div>
 
-        {/* Step Indicator */}
-        <div className="flex items-center mb-8 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-          {steps.map((s, idx) => {
-            const Icon = s.icon;
-            const isActive = currentStep === s.id;
-            const isDone = currentStep > s.id;
-            return (
-              <React.Fragment key={s.id}>
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${
-                      isDone
-                        ? "bg-green-500 text-white"
-                        : isActive
-                          ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-400"
-                    }`}
-                  >
-                    {isDone ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      <Icon className="w-5 h-5" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-xs text-center hidden md:block ${isActive ? "text-primary font-medium" : "text-gray-400"}`}
-                  >
-                    {s.title}
-                  </span>
-                </div>
-                {idx < steps.length - 1 && (
-                  <div
-                    className={`h-0.5 flex-1 mx-1 ${currentStep > s.id ? "bg-green-400" : "bg-gray-200"}`}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
+        <StepIndicator steps={steps} currentStep={currentStep} />
 
         {/* Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           {isLastStep ? (
-            <ConfirmPanel serviceType={serviceType} formData={formData} />
-          ) : serviceType === "rental" ? (
-            <RentalForm
+            <ConfirmPanel
+              serviceType={serviceType}
+              homestayData={homestayData}
+              tourData={tourData}
+              publishError={publishError}
+            />
+          ) : serviceType === "homestay" ? (
+            <HomestayForm
               step={currentStep}
-              formData={rentalData}
-              update={updateRental}
-              updateRoom={updateRentalRoom}
+              data={homestayData}
+              update={updateHomestay}
+              updateRoom={updateHomestayRoom}
               addRoom={addRoom}
               removeRoom={removeRoom}
             />
-          ) : serviceType === "tour" ? (
+          ) : (
             <TourForm
               step={currentStep}
-              formData={tourData}
+              data={tourData}
               update={updateTour}
+              updateSchedule={updateSchedule}
+              addSchedule={addSchedule}
+              removeSchedule={removeSchedule}
               updateItinerary={updateItinerary}
               addItinerary={addItinerary}
               removeItinerary={removeItinerary}
+              destinations={destinations}
             />
-          ) : (
-            <CarForm step={currentStep} formData={carData} update={updateCar} />
           )}
         </div>
 
@@ -1208,13 +1364,19 @@ const PartnerServiceRegistration = () => {
             <ArrowLeft className="w-4 h-4" />
             {currentStep === 1 ? "Hủy" : "Quay lại"}
           </button>
+
           {isLastStep ? (
             <button
               onClick={handlePublish}
-              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium"
+              disabled={publishing}
+              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <CheckCircle className="w-4 h-4" />
-              Đăng dịch vụ
+              {publishing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4" />
+              )}
+              {publishing ? "Đang đăng..." : "Đăng dịch vụ"}
             </button>
           ) : (
             <button

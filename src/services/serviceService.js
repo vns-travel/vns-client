@@ -56,6 +56,94 @@ export const serviceService = {
     });
     return handleResponse(res);
   },
+
+  // POST /api/partner/services (Tour serviceType=1 or Other serviceType=2)
+  async createPartnerService(data) {
+    const res = await fetch(`${BASE_URL}/api/partner/services`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // PUT /api/partner/services/{serviceId}
+  async updatePartnerService(serviceId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/services/${serviceId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/tours/{tourId}/schedules
+  async addTourSchedule(tourId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/tours/${tourId}/schedules`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/tours/{tourId}/itineraries
+  async addTourItinerary(tourId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/tours/${tourId}/itineraries`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/homestays
+  async createHomestay(data) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/homestays/{homestayId}/rooms
+  async addHomestayRoom(homestayId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/homestays/{homestayId}/availability/bulk
+  async bulkHomestayAvailability(homestayId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/availability/bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/homestays/{homestayId}/create (submit for review)
+  async submitHomestay(homestayId) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ confirmed: true }),
+    });
+    return handleResponse(res);
+  },
+
+  // GET /api/destinations
+  async getDestinations() {
+    const res = await fetch(`${BASE_URL}/api/destinations`, {
+      headers: { ...authHeaders() },
+    });
+    return handleResponse(res);
+  },
 };
 
 // ServiceType enum mapping
