@@ -1,6 +1,9 @@
 import { Route, Routes } from "react-router-dom";
 import "./index.css";
+import { AuthProvider } from "./context/AuthContext";
 import LoginPartner from "./pages/PartnerPages/LoginPartner";
+import RegisterPartner from "./pages/PartnerPages/RegisterPartner";
+import ForgotPassword from "./pages/PartnerPages/ForgotPassword";
 import PartnerService from "./pages/PartnerPages/PartnerService";
 import PartnerFinance from "./pages/PartnerPages/PartnerFinance";
 import PartnerBooking from "./pages/PartnerPages/PartnerBooking";
@@ -14,7 +17,6 @@ import PartnerBookingDetails from "./pages/PartnerPages/PartnerBookingDetails";
 import ManagerAccountManagement from "./pages/ManagerPages/ManagerAccountManagement";
 import ManagerDashboard from "./pages/ManagerPages/ManagerDashboard";
 import ManagerLayout from "./pages/ManagerPages/ManagerLayout";
-import RegisterPartner from "./pages/PartnerPages/RegisterPartner";
 import PartnerCombo from "./pages/PartnerPages/PartnerCombo";
 import PartnerComboCreate from "./pages/PartnerPages/PartnerComboCreate";
 import ManagerPromotion from "./pages/ManagerPages/ManagerPromotion";
@@ -31,11 +33,12 @@ import AdminUserManagement from "./pages/AdminPages/AdminUserManagement";
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Routes>
         <Route path="/" element={<LoginPartner />} />
         <Route path="/LoginPartner" element={<LoginPartner />} />
         <Route path="/RegisterPartner" element={<RegisterPartner />} />
+        <Route path="/ForgotPassword" element={<ForgotPassword />} />
 
         {/* Manager routes */}
         <Route element={<ManagerLayout />}>
@@ -103,7 +106,7 @@ function App() {
           <Route path="/PartnerMessaging" element={<PartnerMessaging />} />
         </Route>
       </Routes>
-    </>
+    </AuthProvider>
   );
 }
 

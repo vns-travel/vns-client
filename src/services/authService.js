@@ -1,0 +1,57 @@
+const BASE_URL = "https://vns-server.onrender.com";
+
+async function handleResponse(res) {
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!res.ok) {
+    throw new Error(data.message || data.title || `Lỗi ${res.status}`);
+  }
+  return data;
+}
+
+export const authService = {
+  async login(email, password) {
+    const res = await fetch(`${BASE_URL}/api/Auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return handleResponse(res);
+  },
+
+  async registerPartner(data) {
+    const res = await fetch(`${BASE_URL}/api/Auth/register-partner`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async forgotPassword(email) {
+    const res = await fetch(`${BASE_URL}/api/Auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse(res);
+  },
+
+  async verifyOtp(email, otp) {
+    const res = await fetch(`${BASE_URL}/api/Auth/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp }),
+    });
+    return handleResponse(res);
+  },
+
+  async resetPassword(email, otp, newPassword) {
+    const res = await fetch(`${BASE_URL}/api/Auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp, newPassword }),
+    });
+    return handleResponse(res);
+  },
+};
