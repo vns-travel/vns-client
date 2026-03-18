@@ -21,9 +21,7 @@ const LoginPartner = () => {
       return;
     }
 
-    // Mock login - replace with actual API call
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       if (activeTab === "partner") {

@@ -5,6 +5,8 @@ import {
   Wrench,
   FileText,
   CircleDollarSign,
+  MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import SideBar from "../../components/SideBar";
 import { Outlet } from "react-router-dom";
@@ -40,6 +42,8 @@ const ManagerLayout = () => {
             icon: <TicketPercent />,
           },
           // { path: "/ManagerFinance", label: "Tài Chính", icon: <CircleDollarSign /> },
+          { path: "/ManagerFeedback", label: "Phản Hồi", icon: <MessageSquare /> },
+          { path: "/ManagerRefund", label: "Hoàn Tiền", icon: <RefreshCw /> },
         ]}
       />
       <div className="flex-1 overflow-auto">

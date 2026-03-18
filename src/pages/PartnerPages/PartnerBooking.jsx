@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Eye,
   Filter as FilterIcon,
@@ -27,240 +27,275 @@ const PartnerBooking = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
 
   const navigate = useNavigate();
 
-  // Enhanced mock data with detailed Vietnamese information
-  useEffect(() => {
-    setTimeout(() => {
-      const mockBookings = [
-        // Homestay Bookings
-        {
-          id: "VNS-HB-20241501",
-          bookingId: "uuid-hb-001",
-          customerName: "Nguyễn Văn Minh",
-          email: "nguyen.minh@gmail.com",
-          phone: "+84 901 234 567",
-          serviceType: "Homestay",
-          serviceName: "Oceanview Deluxe Homestay",
-          checkInDate: "2026-06-10",
-          checkOutDate: "2026-06-15",
-          nights: 5,
-          guests: "2 người lớn, 1 trẻ em",
-          status: "confirmed",
-          amount: 7500000,
-          paidAmount: 7500000,
-          paymentMethod: "ZaloPay",
-          paymentStatus: "paid",
-          address: "123 Trần Phú, Quận 1, TP. Hồ Chí Minh",
-          notes: "Yêu cầu phòng tầng cao. Đến muộn khoảng 22:00.",
-          roomName: "Phòng Deluxe Ocean View",
-          roomRate: 1500000,
-          numberOfRooms: 1,
-          bookingDate: "2026-05-20",
-          lastUpdated: "2026-05-22",
-          customerAvatar: "NVM",
-          specialRequests: "Giường cũi cho trẻ em",
-          bookingSource: "Website",
-        },
-        {
-          id: "VNS-HB-20241502",
-          bookingId: "uuid-hb-002",
-          customerName: "Trần Thị Hương",
-          email: "tran.huong@email.com",
-          phone: "+84 912 345 678",
-          serviceType: "Homestay",
-          serviceName: "Biệt Thự Mountain View Đà Lạt",
-          checkInDate: "2026-06-20",
-          checkOutDate: "2026-06-23",
-          nights: 3,
-          guests: "4 người lớn",
-          status: "pending",
-          amount: 13500000,
-          paidAmount: 0,
-          paymentMethod: "Chuyển khoản",
-          paymentStatus: "pending",
-          address: "45 Phường 4, Đà Lạt, Lâm Đồng",
-          notes: "Đặt cho kỳ nghỉ gia đình",
-          roomName: "Villa 5 phòng ngủ",
-          roomRate: 4500000,
-          numberOfRooms: 1,
-          bookingDate: "2026-06-01",
-          lastUpdated: "2026-06-01",
-          customerAvatar: "TTH",
-          specialRequests: "Cần bếp đầy đủ thiết bị",
-          bookingSource: "Mobile App",
-        },
-        // Tour Bookings
-        {
-          id: "VNS-TB-20241503",
-          bookingId: "uuid-tb-003",
-          customerName: "Lê Hoàng Nam",
-          email: "le.nam@email.com",
-          phone: "+84 987 654 321",
-          serviceType: "Tour",
-          serviceName: "Hanoi Old Quarter Street Food Tour",
-          tourDate: "2026-06-18",
-          timeSlot: "09:00 - 13:00",
-          participants: 3,
-          status: "confirmed",
-          amount: 1350000,
-          paidAmount: 1350000,
-          paymentMethod: "PayOS",
-          paymentStatus: "paid",
-          address: "Điểm hẹn: Nhà hát Lớn Hà Nội",
-          notes: "Có 1 người ăn chay",
-          guideName: "Nguyễn Văn Tú",
-          pickupLocation: "Cổng chính Nhà hát Lớn",
-          duration: "4 giờ",
-          language: "Tiếng Việt, Tiếng Anh",
-          bookingDate: "2026-06-05",
-          lastUpdated: "2026-06-06",
-          customerAvatar: "LHN",
-          specialRequests: "1 người ăn chay",
-          bookingSource: "Website",
-          included: ["Hướng dẫn viên", "Đồ ăn", "Nước uống"],
-        },
-        {
-          id: "VNS-TB-20241504",
-          bookingId: "uuid-tb-004",
-          customerName: "Phạm Minh Châu",
-          email: "pham.chau@email.com",
-          phone: "+84 903 456 789",
-          serviceType: "Tour",
-          serviceName: "Hội An Cultural Heritage Walk",
-          tourDate: "2026-06-25",
-          timeSlot: "08:00 - 11:00",
-          participants: 2,
-          status: "completed",
-          amount: 700000,
-          paidAmount: 700000,
-          paymentMethod: "Tiền mặt",
-          paymentStatus: "paid",
-          address: "Điểm hẹn: Chùa Cầu, Hội An",
-          notes: "Khách nước ngoài, cần hướng dẫn tiếng Anh",
-          guideName: "Trần Văn Hùng",
-          pickupLocation: "Chùa Cầu",
-          duration: "3 giờ",
-          language: "Tiếng Anh",
-          bookingDate: "2026-06-10",
-          lastUpdated: "2026-06-25",
-          customerAvatar: "PMC",
-          specialRequests: "Guide nói tiếng Anh",
-          bookingSource: "Partner Referral",
-          included: ["Hướng dẫn viên", "Vé tham quan", "Nước uống"],
-          rating: 5,
-          review: "Tour rất tuyệt vời, hướng dẫn viên nhiệt tình!",
-        },
-        // Vehicle Rental Bookings
-        {
-          id: "VNS-VB-20241505",
-          bookingId: "uuid-vb-005",
-          customerName: "Võ Thanh Tùng",
-          email: "vo.tung@email.com",
-          phone: "+84 333 444 555",
-          serviceType: "Car Rental",
-          serviceName: "Thuê Xe SUV 7 Chỗ - Toyota Fortuner",
-          rentalStartTime: "2026-06-22T08:00:00",
-          rentalEndTime: "2026-06-24T18:00:00",
-          rentalHours: 58,
-          rentalDays: 3,
-          status: "confirmed",
-          amount: 2400000,
-          paidAmount: 1200000,
-          deposit: 3000000,
-          paymentMethod: "ZaloPay",
-          paymentStatus: "partial",
-          address: "Nhận xe: Sân bay Tân Sơn Nhất",
-          notes: "Trả xe tại depot Quận 1, cần ghế trẻ em",
-          vehicleName: "Toyota Fortuner 2022",
-          vehicleType: "SUV 7 chỗ",
-          pickupLocation: "Sân bay Tân Sơn Nhất",
-          returnLocation: "180 Nguyễn Văn Trỗi, Quận 1",
-          driverIncluded: true,
-          driverName: "Nguyễn Văn Đức",
-          bookingDate: "2026-06-08",
-          lastUpdated: "2026-06-15",
-          customerAvatar: "VTT",
-          specialRequests: "Cần 1 ghế trẻ em (3 tuổi)",
-          bookingSource: "Website",
-          included: ["Tài xế", "Xăng", "Bảo hiểm", "Nước uống"],
-          transmission: "Tự động",
-          fuelType: "Xăng",
-        },
-        {
-          id: "VNS-VB-20241506",
-          bookingId: "uuid-vb-006",
-          customerName: "Đặng Thị Mai",
-          email: "dang.mai@email.com",
-          phone: "+84 909 876 543",
-          serviceType: "Car Rental",
-          serviceName: "Thuê Xe Sedan Mercedes C-Class",
-          rentalStartTime: "2026-07-01T09:00:00",
-          rentalEndTime: "2026-07-01T21:00:00",
-          rentalHours: 12,
-          rentalDays: 1,
-          status: "cancelled",
-          amount: 1800000,
-          paidAmount: 0,
-          deposit: 0,
-          paymentMethod: "Chưa thanh toán",
-          paymentStatus: "cancelled",
-          address: "Nhận xe: Quận 3, TP. Hồ Chí Minh",
-          notes: "Hủy do thay đổi kế hoạch",
-          vehicleName: "Mercedes C-Class 2026",
-          vehicleType: "Sedan 5 chỗ",
-          pickupLocation: "123 Võ Văn Tần, Quận 3",
-          returnLocation: "123 Võ Văn Tần, Quận 3",
-          driverIncluded: false,
-          driverName: null,
-          bookingDate: "2026-06-25",
-          lastUpdated: "2026-06-28",
-          customerAvatar: "DTM",
-          specialRequests: null,
-          bookingSource: "Mobile App",
-          cancellationReason: "Thay đổi lịch trình cá nhân",
-          cancelledAt: "2026-06-28",
-          transmission: "Tự động",
-          fuelType: "Xăng",
-        },
-        {
-          id: "VNS-HB-20241507",
-          bookingId: "uuid-hb-007",
-          customerName: "Bùi Văn Khoa",
-          email: "bui.khoa@email.com",
-          phone: "+84 918 765 432",
-          serviceType: "Homestay",
-          serviceName: "Căn Hộ Mặt Biển Nha Trang",
-          checkInDate: "2026-06-28",
-          checkOutDate: "2026-07-02",
-          nights: 4,
-          guests: "2 người lớn, 2 trẻ em",
-          status: "confirmed",
-          amount: 8800000,
-          paidAmount: 8800000,
-          paymentMethod: "PayOS",
-          paymentStatus: "paid",
-          address: "88 Trần Phú, Nha Trang, Khánh Hòa",
-          notes: "Kỷ niệm ngày cưới, nhờ trang trí phòng",
-          roomName: "Căn hộ 3 phòng ngủ view biển",
-          roomRate: 2200000,
-          numberOfRooms: 1,
-          bookingDate: "2026-06-10",
-          lastUpdated: "2026-06-12",
-          customerAvatar: "BVK",
-          specialRequests: "Trang trí phòng lãng mạn, bánh kem",
-          bookingSource: "Website",
-        },
-      ];
-      setBookings(mockBookings);
-      setLoading(false);
-    }, 800);
-  }, []);
+  const [bookings, setBookings] = useState([
+    // Homestay Bookings
+    {
+      id: "VNS-HB-20241501",
+      bookingId: "uuid-hb-001",
+      customerName: "Nguyễn Văn Minh",
+      email: "nguyen.minh@gmail.com",
+      phone: "+84 901 234 567",
+      serviceType: "Homestay",
+      serviceName: "Oceanview Deluxe Homestay",
+      checkInDate: "2026-06-10",
+      checkOutDate: "2026-06-15",
+      nights: 5,
+      guests: "2 người lớn, 1 trẻ em",
+      status: "confirmed",
+      amount: 7500000,
+      paidAmount: 7500000,
+      paymentMethod: "ZaloPay",
+      paymentStatus: "paid",
+      address: "123 Trần Phú, Quận 1, TP. Hồ Chí Minh",
+      notes: "Yêu cầu phòng tầng cao. Đến muộn khoảng 22:00.",
+      roomName: "Phòng Deluxe Ocean View",
+      roomRate: 1500000,
+      numberOfRooms: 1,
+      bookingDate: "2026-05-20",
+      lastUpdated: "2026-05-22",
+      customerAvatar: "NVM",
+      specialRequests: "Giường cũi cho trẻ em",
+      bookingSource: "Website",
+    },
+    {
+      id: "VNS-HB-20241502",
+      bookingId: "uuid-hb-002",
+      customerName: "Trần Thị Hương",
+      email: "tran.huong@email.com",
+      phone: "+84 912 345 678",
+      serviceType: "Homestay",
+      serviceName: "Biệt Thự Mountain View Đà Lạt",
+      checkInDate: "2026-06-20",
+      checkOutDate: "2026-06-23",
+      nights: 3,
+      guests: "4 người lớn",
+      status: "pending",
+      amount: 13500000,
+      paidAmount: 0,
+      paymentMethod: "Chuyển khoản",
+      paymentStatus: "pending",
+      address: "45 Phường 4, Đà Lạt, Lâm Đồng",
+      notes: "Đặt cho kỳ nghỉ gia đình",
+      roomName: "Villa 5 phòng ngủ",
+      roomRate: 4500000,
+      numberOfRooms: 1,
+      bookingDate: "2026-06-01",
+      lastUpdated: "2026-06-01",
+      customerAvatar: "TTH",
+      specialRequests: "Cần bếp đầy đủ thiết bị",
+      bookingSource: "Mobile App",
+    },
+    // Tour Bookings
+    {
+      id: "VNS-TB-20241503",
+      bookingId: "uuid-tb-003",
+      customerName: "Lê Hoàng Nam",
+      email: "le.nam@email.com",
+      phone: "+84 987 654 321",
+      serviceType: "Tour",
+      serviceName: "Hanoi Old Quarter Street Food Tour",
+      tourDate: "2026-06-18",
+      timeSlot: "09:00 - 13:00",
+      participants: 3,
+      status: "confirmed",
+      amount: 1350000,
+      paidAmount: 1350000,
+      paymentMethod: "PayOS",
+      paymentStatus: "paid",
+      address: "Điểm hẹn: Nhà hát Lớn Hà Nội",
+      notes: "Có 1 người ăn chay",
+      guideName: "Nguyễn Văn Tú",
+      pickupLocation: "Cổng chính Nhà hát Lớn",
+      duration: "4 giờ",
+      language: "Tiếng Việt, Tiếng Anh",
+      bookingDate: "2026-06-05",
+      lastUpdated: "2026-06-06",
+      customerAvatar: "LHN",
+      specialRequests: "1 người ăn chay",
+      bookingSource: "Website",
+      included: ["Hướng dẫn viên", "Đồ ăn", "Nước uống"],
+    },
+    {
+      id: "VNS-TB-20241504",
+      bookingId: "uuid-tb-004",
+      customerName: "Phạm Minh Châu",
+      email: "pham.chau@email.com",
+      phone: "+84 903 456 789",
+      serviceType: "Tour",
+      serviceName: "Hội An Cultural Heritage Walk",
+      tourDate: "2026-06-25",
+      timeSlot: "08:00 - 11:00",
+      participants: 2,
+      status: "completed",
+      amount: 700000,
+      paidAmount: 700000,
+      paymentMethod: "Tiền mặt",
+      paymentStatus: "paid",
+      address: "Điểm hẹn: Chùa Cầu, Hội An",
+      notes: "Khách nước ngoài, cần hướng dẫn tiếng Anh",
+      guideName: "Trần Văn Hùng",
+      pickupLocation: "Chùa Cầu",
+      duration: "3 giờ",
+      language: "Tiếng Anh",
+      bookingDate: "2026-06-10",
+      lastUpdated: "2026-06-25",
+      customerAvatar: "PMC",
+      specialRequests: "Guide nói tiếng Anh",
+      bookingSource: "Partner Referral",
+      included: ["Hướng dẫn viên", "Vé tham quan", "Nước uống"],
+      rating: 5,
+      review: "Tour rất tuyệt vời, hướng dẫn viên nhiệt tình!",
+    },
+    // Vehicle Rental Bookings
+    {
+      id: "VNS-VB-20241505",
+      bookingId: "uuid-vb-005",
+      customerName: "Võ Thanh Tùng",
+      email: "vo.tung@email.com",
+      phone: "+84 333 444 555",
+      serviceType: "Car Rental",
+      serviceName: "Thuê Xe SUV 7 Chỗ - Toyota Fortuner",
+      rentalStartTime: "2026-06-22T08:00:00",
+      rentalEndTime: "2026-06-24T18:00:00",
+      rentalHours: 58,
+      rentalDays: 3,
+      status: "confirmed",
+      amount: 2400000,
+      paidAmount: 1200000,
+      deposit: 3000000,
+      paymentMethod: "ZaloPay",
+      paymentStatus: "partial",
+      address: "Nhận xe: Sân bay Tân Sơn Nhất",
+      notes: "Trả xe tại depot Quận 1, cần ghế trẻ em",
+      vehicleName: "Toyota Fortuner 2022",
+      vehicleType: "SUV 7 chỗ",
+      pickupLocation: "Sân bay Tân Sơn Nhất",
+      returnLocation: "180 Nguyễn Văn Trỗi, Quận 1",
+      driverIncluded: true,
+      driverName: "Nguyễn Văn Đức",
+      bookingDate: "2026-06-08",
+      lastUpdated: "2026-06-15",
+      customerAvatar: "VTT",
+      specialRequests: "Cần 1 ghế trẻ em (3 tuổi)",
+      bookingSource: "Website",
+      included: ["Tài xế", "Xăng", "Bảo hiểm", "Nước uống"],
+      transmission: "Tự động",
+      fuelType: "Xăng",
+    },
+    {
+      id: "VNS-VB-20241506",
+      bookingId: "uuid-vb-006",
+      customerName: "Đặng Thị Mai",
+      email: "dang.mai@email.com",
+      phone: "+84 909 876 543",
+      serviceType: "Car Rental",
+      serviceName: "Thuê Xe Sedan Mercedes C-Class",
+      rentalStartTime: "2026-07-01T09:00:00",
+      rentalEndTime: "2026-07-01T21:00:00",
+      rentalHours: 12,
+      rentalDays: 1,
+      status: "cancelled",
+      amount: 1800000,
+      paidAmount: 0,
+      deposit: 0,
+      paymentMethod: "Chưa thanh toán",
+      paymentStatus: "cancelled",
+      address: "Nhận xe: Quận 3, TP. Hồ Chí Minh",
+      notes: "Hủy do thay đổi kế hoạch",
+      vehicleName: "Mercedes C-Class 2026",
+      vehicleType: "Sedan 5 chỗ",
+      pickupLocation: "123 Võ Văn Tần, Quận 3",
+      returnLocation: "123 Võ Văn Tần, Quận 3",
+      driverIncluded: false,
+      driverName: null,
+      bookingDate: "2026-06-25",
+      lastUpdated: "2026-06-28",
+      customerAvatar: "DTM",
+      specialRequests: null,
+      bookingSource: "Mobile App",
+      cancellationReason: "Thay đổi lịch trình cá nhân",
+      cancelledAt: "2026-06-28",
+      transmission: "Tự động",
+      fuelType: "Xăng",
+    },
+    {
+      id: "VNS-HB-20241507",
+      bookingId: "uuid-hb-007",
+      customerName: "Bùi Văn Khoa",
+      email: "bui.khoa@email.com",
+      phone: "+84 918 765 432",
+      serviceType: "Homestay",
+      serviceName: "Căn Hộ Mặt Biển Nha Trang",
+      checkInDate: "2026-06-28",
+      checkOutDate: "2026-07-02",
+      nights: 4,
+      guests: "2 người lớn, 2 trẻ em",
+      status: "confirmed",
+      amount: 8800000,
+      paidAmount: 8800000,
+      paymentMethod: "PayOS",
+      paymentStatus: "paid",
+      address: "88 Trần Phú, Nha Trang, Khánh Hòa",
+      notes: "Kỷ niệm ngày cưới, nhờ trang trí phòng",
+      roomName: "Căn hộ 3 phòng ngủ view biển",
+      roomRate: 2200000,
+      numberOfRooms: 1,
+      bookingDate: "2026-06-10",
+      lastUpdated: "2026-06-12",
+      customerAvatar: "BVK",
+      specialRequests: "Trang trí phòng lãng mạn, bánh kem",
+      bookingSource: "Website",
+    },
+    // Refund demo booking — cancelled tour with full payment & pending refund request
+    {
+      id: "VNS-TB-20241508",
+      bookingId: "uuid-tb-008",
+      customerName: "Hoàng Thị Lan",
+      email: "hoang.lan@email.com",
+      phone: "+84 977 123 456",
+      customerAvatar: "HTL",
+      serviceType: "Tour",
+      serviceName: "Tour Phú Quốc 3N2Đ Trọn Gói",
+      tourDate: "2026-06-20",
+      timeSlot: "07:00 - 20:00",
+      participants: 2,
+      duration: "3 ngày 2 đêm",
+      guideName: "Trần Minh Khoa",
+      pickupLocation: "Sân bay Phú Quốc",
+      language: "Tiếng Việt",
+      included: ["Xe đưa đón", "Khách sạn 3 sao", "Ăn sáng", "Hướng dẫn viên"],
+      status: "cancelled",
+      amount: 6400000,
+      paidAmount: 6400000,
+      paymentMethod: "PayOS",
+      paymentStatus: "paid",
+      address: "Điểm hẹn: Sân bay Phú Quốc",
+      notes: "Hủy do lý do cá nhân",
+      bookingDate: "2026-06-01",
+      lastUpdated: "2026-06-13",
+      cancellationReason: "Người thân bị ốm đột xuất, không thể đi được.",
+      cancelledAt: "2026-06-13",
+      bookingSource: "Mobile App",
+      specialRequests: "Phòng đôi, view biển",
+      refundRequest: {
+        requestId: "RF-002",
+        requestDate: "2026-06-13",
+        reason:
+          "Người thân trong gia đình bị ốm đột xuất nên không thể tham gia tour. Kính mong quý đối tác xem xét hoàn lại toàn bộ tiền đã thanh toán.",
+        requestedAmount: 6400000,
+        images: ["benh-vien-giay-xac-nhan.jpg", "don-thuoc-bac-si.jpg"],
+        status: "pending",
+        approvedAmount: null,
+        rejectionReason: null,
+        processedDate: null,
+      },
+    },
+  ]);
 
   // Calculate enhanced stats
   const stats = {
@@ -411,38 +446,8 @@ const PartnerBooking = () => {
   };
 
   const viewDetail = (booking) => {
-    let route = "";
-    if (booking.serviceType === "Homestay") {
-      route = `/partner/bookings/homestay/${booking.bookingId}`;
-    } else if (booking.serviceType === "Tour") {
-      route = `/partner/bookings/tour/${booking.bookingId}`;
-    } else if (booking.serviceType === "Car Rental") {
-      route = `/partner/bookings/vehicle/${booking.bookingId}`;
-    }
-    navigate(route);
+    navigate("/PartnerBookingDetails", { state: { booking } });
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#e9e9e9] p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center pt-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Quản lý đặt chỗ
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Theo dõi và quản lý các đặt chỗ của bạn
-              </p>
-            </div>
-          </div>
-          <div className="mt-10 flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#008fa0]"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#e9e9e9] p-8">
@@ -785,14 +790,22 @@ const PartnerBooking = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
-                            booking.status,
-                          )}`}
-                        >
-                          {getStatusIcon(booking.status)}
-                          {getStatusText(booking.status)}
-                        </span>
+                        <div className="flex flex-col gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
+                              booking.status,
+                            )}`}
+                          >
+                            {getStatusIcon(booking.status)}
+                            {getStatusText(booking.status)}
+                          </span>
+                          {booking.refundRequest?.status === "pending" && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+                              <RefreshCw className="w-3 h-3" />
+                              Chờ hoàn tiền
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end items-center gap-2">

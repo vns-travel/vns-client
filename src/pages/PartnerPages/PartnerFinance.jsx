@@ -196,32 +196,24 @@ const PartnerFinance = () => {
                 {
                   title: "Tổng thu nhập",
                   value: fmt(revenueData.totalEarnings),
-                  sub: `Sau phí: ${fmt(revenueData.netEarnings)}`,
                   icon: DollarSign,
-                  trend: "+12.5%",
-                  trendUp: true,
                   iconBg: "bg-green-100 text-green-600",
                 },
                 {
                   title: "Tháng này",
                   value: fmt(revenueData.monthlyEarnings),
-                  sub: `Tăng ${revenueData.monthlyGrowth}% tháng trước`,
                   icon: TrendingUp,
-                  trend: "+12.5%",
-                  trendUp: true,
                   iconBg: "bg-blue-100 text-blue-600",
                 },
                 {
                   title: "Chờ thanh toán",
                   value: fmt(revenueData.pendingAmount),
-                  sub: "Sẽ giải ngân trong 3-5 ngày",
                   icon: Clock,
                   iconBg: "bg-yellow-100 text-yellow-600",
                 },
                 {
                   title: "Phí nền tảng",
                   value: fmt(revenueData.platformFee),
-                  sub: `${revenueData.platformFeeRate}% trên tổng doanh thu`,
                   icon: CreditCard,
                   iconBg: "bg-purple-100 text-purple-600",
                 },
@@ -256,7 +248,7 @@ const PartnerFinance = () => {
             </div>
 
             {/* Revenue breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-green-50 border border-green-100 rounded-xl p-5">
                 <p className="text-sm font-medium text-green-800 mb-2">
                   Doanh thu gộp
@@ -288,7 +280,7 @@ const PartnerFinance = () => {
                 </p>
                 <p className="text-xs text-blue-600 mt-1">Sau khi trừ phí</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Transactions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">

@@ -40,8 +40,10 @@ const PartnerCombo = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("created");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewItem, setViewItem] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
-  const combosAndPromotions = [
+  const [combosAndPromotions, setCombosAndPromotions] = useState([
     {
       id: 1,
       type: "combo",
@@ -251,7 +253,12 @@ const PartnerCombo = () => {
       customerSavings: 108000000,
       targetAudience: "Gia đình có trẻ em",
     },
-  ];
+  ]);
+
+  const handleDelete = (id) => {
+    setCombosAndPromotions((prev) => prev.filter((item) => item.id !== id));
+    setDeleteId(null);
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + " ₫";
@@ -348,6 +355,7 @@ const PartnerCombo = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-bg-light p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -829,12 +837,14 @@ const PartnerCombo = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <button
+                        onClick={() => setViewItem(item)}
                         className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded transition-colors"
                         title="Xem chi tiết"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => navigate("/PartnerCombo/create", { state: { item } })}
                         className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded transition-colors"
                         title="Chỉnh sửa"
                       >
@@ -862,6 +872,7 @@ const PartnerCombo = () => {
                         </button>
                       )}
                       <button
+                        onClick={() => setDeleteId(item.id)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         title="Xóa"
                       >
@@ -914,6 +925,124 @@ const PartnerCombo = () => {
         )}
       </div>
     </div>
+
+    {/* View Modal */}
+    {viewItem && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">{viewItem.name}</h2>
+            <button
+              onClick={() => setViewItem(null)}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-600">{viewItem.description}</p>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-medium text-gray-700">Trạng thái:</span>
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(viewItem.status)}`}>
+                  {viewItem.status === "active" ? "Đang hoạt động" : viewItem.status === "draft" ? "Bản nháp" : viewItem.status === "paused" ? "Tạm dừng" : "Đã hết hạn"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Loại:</span>
+                <span className="ml-2 text-gray-900">{viewItem.type === "combo" ? "Gói combo" : "Khuyến mãi"}</span>
+              </div>
+              {viewItem.type === "combo" && (
+                <>
+                  <div>
+                    <span className="font-medium text-gray-700">Giá gốc:</span>
+                    <span className="ml-2 text-gray-500 line-through">{formatPrice(viewItem.originalPrice)}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Giá ưu đãi:</span>
+                    <span className="ml-2 text-primary font-semibold">{formatPrice(viewItem.currentPrice)}</span>
+                  </div>
+                </>
+              )}
+              <div>
+                <span className="font-medium text-gray-700">Đặt chỗ:</span>
+                <span className="ml-2 text-gray-900">{viewItem.bookings}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Doanh thu:</span>
+                <span className="ml-2 text-gray-900">{formatPrice(viewItem.revenue)}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Hiệu lực từ:</span>
+                <span className="ml-2 text-gray-900">{new Date(viewItem.validFrom).toLocaleDateString("vi-VN")}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Đến:</span>
+                <span className="ml-2 text-gray-900">{new Date(viewItem.validUntil).toLocaleDateString("vi-VN")}</span>
+              </div>
+            </div>
+            {viewItem.services && (
+              <div>
+                <p className="font-medium text-gray-700 mb-2">Dịch vụ bao gồm:</p>
+                <ul className="space-y-1">
+                  {viewItem.services.map((s, i) => (
+                    <li key={i} className="flex items-start text-sm text-gray-600">
+                      <CheckCircle className="w-4 h-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 px-6 pb-6">
+            <button
+              onClick={() => { setViewItem(null); navigate("/PartnerCombo/create", { state: { item: viewItem } }); }}
+              className="flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover text-sm"
+            >
+              <Edit3 className="w-4 h-4 mr-2" />
+              Chỉnh sửa
+            </button>
+            <button
+              onClick={() => setViewItem(null)}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Delete Confirmation Modal */}
+    {deleteId !== null && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+          <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+            <Trash2 className="w-6 h-6 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Xác nhận xóa</h3>
+          <p className="text-sm text-gray-600 text-center mb-6">
+            Bạn có chắc muốn xóa combo này không? Hành động này không thể hoàn tác.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleDelete(deleteId)}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+            >
+              Xóa
+            </button>
+            <button
+              onClick={() => setDeleteId(null)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
