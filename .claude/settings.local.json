@@ -18,7 +18,31 @@
       "Bash(npm install:*)",
       "Bash(netstat -ano)",
       "Read(//d/STUDY/vns-client/src/server/**)",
-      "Bash(xargs -I{} taskkill /PID {} /F)"
+      "Bash(xargs -I{} taskkill /PID {} /F)",
+      "Bash(find d:/STUDY/vns-client/src/server/src -name *.js ! -path */node_modules/*)",
+      "Bash(cmd.exe /c \"taskkill /PID 16580 /F\")",
+      "Bash(cmd.exe /c \"taskkill /F /PID 16580\")",
+      "Bash(cmd.exe /c \"taskkill /F /PID 16580 && echo KILLED\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 16580 -Force; Write-Host ''Done''\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"test@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"password123\"\"\"\",\"\"\"\"fullName\"\"\"\":\"\"\"\"Test User\"\"\"\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -v -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"password123\"\",\"\"fullName\"\":\"\"Test User\"\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"password123\"\",\"\"fullName\"\":\"\"Test User\"\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"password123\"\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"wrongpassword\"\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/forgot-password -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test@example.com\"\"}')",
+      "Bash(mongosh \"mongodb://localhost:27017/vns\" --quiet --eval \"db.otps.find\\({email:''test@example.com''}\\).toArray\\(\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 22052 -Force; Write-Host ''Stopped''\")",
+      "Bash(node src/server/scripts/seedManager.js)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register-partner -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"partner@test.com\"\",\"\"password\"\":\"\"password123\"\",\"\"businessName\"\":\"\"Test Tours Co\"\",\"\"phone\"\":\"\"0901234567\"\"}')",
+      "Bash(PARTNER_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4M2I5MmRiNy01MzMzLTQ1NTQtYWJiNy00MjE0N2M5ZjQ3NDIiLCJyb2xlIjoicGFydG5lciIsImlhdCI6MTc3NDg4MzU2OSwiZXhwIjoxNzc1NDg4MzY5fQ.o4Bugqu5fpeLXhiWl6ITGLwsZhgcO48C2Rpbs8_dAQg\")",
+      "Bash(__NEW_LINE_ceb8716b86f3897c__ curl -s -X POST http://localhost:3000/api/partner/documents -H \"Content-Type: application/json\" -H \"Authorization: Bearer $PARTNER_TOKEN\" -d '{:*)",
+      "Bash(MANAGER_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmMTQ2NTQ3Ny0zMGI0LTRiMzQtODNkYy0wYTM3YTI1YjViNjUiLCJyb2xlIjoibWFuYWdlciIsImlhdCI6MTc3NDg4MzcwMywiZXhwIjoxNzc1NDg4NTAzfQ.r4NVj9QgDhTDbwWMAEAo2hcU8U_hW93X-jFaZELR9jc\")",
+      "Bash(__NEW_LINE_989c13e5d7c9ae8e__ curl:*)",
+      "Bash(PARTNER_ID=\"88661215-37ec-4ffe-a8b3-c664703acb2a\")",
+      "Bash(__NEW_LINE_3fb272bd051fae57__ curl:*)",
+      "Bash(__NEW_LINE_e374e77523f06bdc__ curl:*)"
     ]
   }
 }

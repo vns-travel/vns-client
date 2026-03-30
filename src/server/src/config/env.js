@@ -1,7 +1,16 @@
 // Load and validate all required environment variables at startup.
 // Anything missing here crashes the process immediately rather than failing
 // silently at runtime — fail fast is intentional.
-const required = ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET'];
+const required = [
+  'DATABASE_URL',
+  'REDIS_URL',
+  'JWT_SECRET',
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'SMTP_FROM',
+];
 
 const missing = required.filter((key) => !process.env[key]);
 // Support both MONGODB_URI (spec) and MONGO_URI (legacy .env key)
@@ -28,4 +37,10 @@ module.exports = {
   PAYOS_API_KEY:       process.env.PAYOS_API_KEY,
   PAYOS_CHECKSUM_KEY:  process.env.PAYOS_CHECKSUM_KEY,
   PLATFORM_FEE_PERCENT: parseFloat(process.env.PLATFORM_FEE_PERCENT || '10'),
+  // SMTP — required for OTP email delivery
+  SMTP_HOST:  process.env.SMTP_HOST,
+  SMTP_PORT:  parseInt(process.env.SMTP_PORT || '587', 10),
+  SMTP_USER:  process.env.SMTP_USER,
+  SMTP_PASS:  process.env.SMTP_PASS,
+  SMTP_FROM:  process.env.SMTP_FROM,
 };

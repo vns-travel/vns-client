@@ -1,7 +1,6 @@
-// Load and validate environment variables before anything else.
-// This will throw immediately if required vars are missing.
-require('./src/config/env');
+// dotenv must populate process.env before env.js runs its validation check.
 require('dotenv').config();
+require('./src/config/env');
 
 const app = require('./src/app');
 const { connectPostgres, connectMongo } = require('./src/config/db');

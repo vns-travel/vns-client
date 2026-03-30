@@ -30,7 +30,6 @@ import ManagerRefund from "./pages/ManagerPages/ManagerRefund";
 import AdminLayout from "./pages/AdminPages/AdminLayout";
 import AdminDashboard from "./pages/AdminPages/AdminDashboard";
 import AdminUserManagement from "./pages/AdminPages/AdminUserManagement";
-import DestinationsExplorer from "./pages/DestinationsExplorer";
 
 function App() {
   return (
@@ -40,7 +39,6 @@ function App() {
         <Route path="/LoginPartner" element={<LoginPartner />} />
         <Route path="/RegisterPartner" element={<RegisterPartner />} />
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
-        <Route path="/destinations" element={<DestinationsExplorer />} />
 
         {/* Manager routes */}
         <Route element={<ManagerLayout />}>

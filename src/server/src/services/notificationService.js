@@ -1,20 +1,29 @@
 const notificationRepo = require('../repositories/notificationRepo');
-const partnerRepo      = require('../repositories/partnerRepo');
 
-async function send(userId, title, body, type, refId = null) {
-  return notificationRepo.create({ userId, title, body, type, refId });
+/**
+ * Fire-and-forget notification helper.
+ * Intentionally never throws — a failed notification must never break the main flow.
+ */
+async function send(userId, title, body, type = 'system', refId = null) {
+  try {
+    return await notificationRepo.create({ userId, title, body, type, refId });
+  } catch (err) {
+    console.error('[Notification] Failed to send notification:', err.message);
+    return null;
+  }
 }
 
-async function sendToPartner(partnerId, title, body, type, refId = null) {
-  // partnerId here is partner_profiles.id — look up the user_id
-  const profile = await partnerRepo.findByUserId(partnerId);
-  if (!profile) return null;
-  return send(profile.user_id, title, body, type, refId);
+async function getForUser(userId, { limit = 20, offset = 0 } = {}) {
+  const notifications = await notificationRepo.findByUserId(userId, { limit, offset });
+  return { notifications, total: notifications.length };
 }
 
-async function getUnread(userId) {
-  const notifications = await notificationRepo.findByUserId(userId);
-  return notifications.filter((n) => !n.is_read);
+async function markRead(notificationId, userId) {
+  return notificationRepo.markRead(notificationId, userId);
 }
 
-module.exports = { send, sendToPartner, getUnread };
+async function markAllRead(userId) {
+  return notificationRepo.markAllRead(userId);
+}
+
+module.exports = { send, getForUser, markRead, markAllRead };
