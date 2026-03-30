@@ -1,16 +1,28 @@
 const service = require('./auth.service');
 
-// Controllers validate input (via validate middleware) and delegate to the service.
-// They must NOT contain business logic.
+async function register(req, res, next) {
+  try {
+    const data = await service.register({
+      email: req.body.email,
+      password: req.body.password,
+      fullName: req.body.fullName,
+    });
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
 
-// Example stub:
-// async function getAll(req, res, next) {
-//   try {
-//     const data = await service.getAll();
-//     res.json({ success: true, data });
-//   } catch (err) {
-//     next(err);
-//   }
-// }
+async function login(req, res, next) {
+  try {
+    const data = await service.login({
+      email: req.body.email,
+      password: req.body.password,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
 
-module.exports = {};
+module.exports = { register, login };

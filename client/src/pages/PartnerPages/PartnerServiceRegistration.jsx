@@ -14,6 +14,8 @@ import {
   Loader2,
   AlertCircle,
   Compass,
+  Car,
+  Building2,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { serviceService } from "../../services/serviceService";
@@ -831,12 +833,264 @@ const OtherPostForm = ({
 );
 
 /* ═══════════════════════════════════════════
+   CAR RENTAL STEPS
+═══════════════════════════════════════════ */
+const CAR_RENTAL_STEPS = [
+  { id: 1, title: "Thông tin công ty", icon: Building2 },
+  { id: 2, title: "Đội xe", icon: Car },
+  { id: 3, title: "Giờ hoạt động", icon: Clock },
+  { id: 4, title: "Xác nhận & Đăng", icon: CheckCircle },
+];
+
+const VEHICLE_TYPES = [
+  { value: "sedan", label: "Sedan" },
+  { value: "suv", label: "SUV" },
+  { value: "van", label: "Van / Minibus" },
+  { value: "motorbike", label: "Xe máy" },
+];
+
+const VEHICLE_FEATURES = [
+  "Bảo hiểm", "Xăng", "Ghế trẻ em", "GPS", "Wi-Fi", "Điều hòa",
+  "Lái xe riêng", "Hành lý thêm",
+];
+
+const CarRentalForm = ({
+  step,
+  data,
+  update,
+  updateVehicle,
+  addVehicle,
+  removeVehicle,
+}) => {
+  if (step === 1)
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Tên công ty / dịch vụ *"
+            value={data.title}
+            onChange={(v) => update("title", v)}
+            placeholder="VD: Phu Quoc Car Rental"
+            required
+          />
+          <FormField
+            label="Số điện thoại"
+            value={data.phoneNumber}
+            onChange={(v) => update("phoneNumber", v)}
+            placeholder="+84..."
+          />
+          <FormField
+            label="Thành phố *"
+            value={data.city}
+            onChange={(v) => update("city", v)}
+            placeholder="VD: Phú Quốc"
+            required
+          />
+          <FormField
+            label="Địa chỉ"
+            value={data.address}
+            onChange={(v) => update("address", v)}
+            placeholder="Số nhà, đường..."
+          />
+        </div>
+        <FormTextarea
+          label="Mô tả"
+          value={data.description}
+          onChange={(v) => update("description", v)}
+          placeholder="Giới thiệu về dịch vụ cho thuê xe của bạn..."
+          rows={4}
+        />
+        <FormTextarea
+          label="Chính sách hủy"
+          value={data.cancellationPolicy}
+          onChange={(v) => update("cancellationPolicy", v)}
+          placeholder="VD: Hoàn tiền 100% nếu hủy trước 24 giờ..."
+        />
+      </div>
+    );
+
+  if (step === 2)
+    return (
+      <div className="space-y-4">
+        {data.vehicles.map((v, idx) => (
+          <div
+            key={idx}
+            className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-800">Xe #{idx + 1}</h4>
+              {data.vehicles.length > 1 && (
+                <button
+                  onClick={() => removeVehicle(idx)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <FormField
+                label="Hãng xe *"
+                value={v.make}
+                onChange={(val) => updateVehicle(idx, "make", val)}
+                placeholder="VD: Toyota"
+              />
+              <FormField
+                label="Dòng xe *"
+                value={v.model}
+                onChange={(val) => updateVehicle(idx, "model", val)}
+                placeholder="VD: Fortuner"
+              />
+              <FormField
+                label="Năm sản xuất"
+                value={v.year}
+                onChange={(val) => updateVehicle(idx, "year", val)}
+                type="number"
+                placeholder="VD: 2022"
+              />
+              <FormField
+                label="Số chỗ ngồi *"
+                value={v.capacity}
+                onChange={(val) => updateVehicle(idx, "capacity", val)}
+                type="number"
+                placeholder="VD: 7"
+              />
+              <FormSelect
+                label="Loại xe"
+                value={v.vehicleType}
+                onChange={(val) => updateVehicle(idx, "vehicleType", val)}
+                options={VEHICLE_TYPES}
+              />
+              <FormSelect
+                label="Hình thức tính giá"
+                value={v.pricingModel}
+                onChange={(val) => updateVehicle(idx, "pricingModel", val)}
+                options={[
+                  { value: "daily", label: "Theo ngày" },
+                  { value: "hourly", label: "Theo giờ" },
+                ]}
+              />
+              {v.pricingModel === "daily" && (
+                <FormField
+                  label="Giá theo ngày (₫) *"
+                  value={v.dailyRate}
+                  onChange={(val) => updateVehicle(idx, "dailyRate", val)}
+                  type="number"
+                  placeholder="VD: 800000"
+                />
+              )}
+              {v.pricingModel === "hourly" && (
+                <FormField
+                  label="Giá theo giờ (₫) *"
+                  value={v.hourlyRate}
+                  onChange={(val) => updateVehicle(idx, "hourlyRate", val)}
+                  type="number"
+                  placeholder="VD: 120000"
+                />
+              )}
+              <FormField
+                label="Đặt cọc (₫)"
+                value={v.depositAmount}
+                onChange={(val) => updateVehicle(idx, "depositAmount", val)}
+                type="number"
+                placeholder="0"
+              />
+              <div>
+                <label className="flex items-center gap-2 mt-5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={v.driverIncluded}
+                    onChange={(e) =>
+                      updateVehicle(idx, "driverIncluded", e.target.checked)
+                    }
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Có tài xế
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Bao gồm
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {VEHICLE_FEATURES.map((feat) => (
+                  <label key={feat} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={v.includedFeatures.includes(feat)}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...v.includedFeatures, feat]
+                          : v.includedFeatures.filter((x) => x !== feat);
+                        updateVehicle(idx, "includedFeatures", next);
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{feat}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={addVehicle}
+          className="flex items-center gap-2 text-sm text-primary hover:text-primary-hover font-medium"
+        >
+          <Plus className="w-4 h-4" /> Thêm xe
+        </button>
+      </div>
+    );
+
+  if (step === 3)
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Cài đặt khung thời gian hoạt động. Sẽ áp dụng cho tất cả các xe trong đội.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Ngày bắt đầu *"
+            value={data.availStartDate}
+            onChange={(v) => update("availStartDate", v)}
+            type="date"
+          />
+          <FormField
+            label="Ngày kết thúc *"
+            value={data.availEndDate}
+            onChange={(v) => update("availEndDate", v)}
+            type="date"
+          />
+          <FormField
+            label="Giờ mở cửa"
+            value={data.availableFrom}
+            onChange={(v) => update("availableFrom", v)}
+            type="time"
+          />
+          <FormField
+            label="Giờ đóng cửa"
+            value={data.availableTo}
+            onChange={(v) => update("availableTo", v)}
+            type="time"
+          />
+        </div>
+      </div>
+    );
+
+  return null;
+};
+
+/* ═══════════════════════════════════════════
    CONFIRM PANEL
 ═══════════════════════════════════════════ */
 const ConfirmPanel = ({
   serviceType,
   homestayData,
   tourData,
+  carRentalData,
   publishError,
 }) => {
   const summaryItems =
@@ -852,6 +1106,19 @@ const ConfirmPanel = ({
           },
           { label: "Số loại phòng", value: homestayData.rooms.length },
           { label: "Nhận phòng", value: homestayData.checkInTime || "—" },
+        ]
+      : serviceType === "car-rental"
+      ? [
+          { label: "Tên công ty", value: carRentalData.title || "—" },
+          { label: "Thành phố", value: carRentalData.city || "—" },
+          { label: "Số xe trong đội", value: carRentalData.vehicles.length },
+          {
+            label: "Thời gian hoạt động",
+            value:
+              carRentalData.availStartDate && carRentalData.availEndDate
+                ? `${carRentalData.availStartDate} → ${carRentalData.availEndDate}`
+                : "—",
+          },
         ]
       : [
           { label: "Tên tour", value: tourData.title || "—" },
@@ -1133,6 +1400,47 @@ const PartnerServiceRegistration = () => {
   });
   const updateOther = (f, v) => setOtherData((p) => ({ ...p, [f]: v }));
 
+  /* --- Car Rental state --- */
+  const blankVehicle = () => ({
+    make: "",
+    model: "",
+    year: "",
+    vehicleType: "sedan",
+    capacity: "4",
+    pricingModel: "daily",
+    dailyRate: "",
+    hourlyRate: "",
+    driverIncluded: false,
+    depositAmount: "0",
+    includedFeatures: [],
+  });
+  const [carRentalData, setCarRentalData] = useState({
+    title: "",
+    city: "",
+    address: "",
+    phoneNumber: "",
+    description: "",
+    cancellationPolicy: "",
+    availStartDate: "",
+    availEndDate: "",
+    availableFrom: "08:00",
+    availableTo: "20:00",
+    vehicles: [blankVehicle()],
+  });
+  const updateCarRental = (f, v) => setCarRentalData((p) => ({ ...p, [f]: v }));
+  const updateCarRentalVehicle = (idx, f, v) => {
+    const vs = [...carRentalData.vehicles];
+    vs[idx] = { ...vs[idx], [f]: v };
+    setCarRentalData((p) => ({ ...p, vehicles: vs }));
+  };
+  const addCarRentalVehicle = () =>
+    setCarRentalData((p) => ({ ...p, vehicles: [...p.vehicles, blankVehicle()] }));
+  const removeCarRentalVehicle = (idx) =>
+    setCarRentalData((p) => ({
+      ...p,
+      vehicles: p.vehicles.filter((_, i) => i !== idx),
+    }));
+
   /* --- Publish --- */
   const handlePublish = async () => {
     setPublishing(true);
@@ -1258,6 +1566,54 @@ const PartnerServiceRegistration = () => {
         }
 
         await serviceService.submitHomestay(homestayId);
+      } else if (serviceType === "car-rental") {
+        if (carRentalData.vehicles.length === 0) {
+          setPublishError("Vui lòng thêm ít nhất một xe.");
+          return;
+        }
+
+        // 1. Create the service (company) record — use explicit string type so DB CHECK passes
+        const svc = await serviceService.createService({
+          serviceType: 'car_rental',
+          title: carRentalData.title,
+          city: carRentalData.city,
+          address: carRentalData.address || undefined,
+          description: carRentalData.description || undefined,
+          cancellationPolicy: carRentalData.cancellationPolicy || undefined,
+        });
+        const serviceId = svc.data?.serviceId || svc.serviceId || svc.id;
+
+        // 2. Add each vehicle and set its availability window
+        for (const v of carRentalData.vehicles) {
+          if (!v.make || !v.model || !v.capacity) continue;
+          const vr = await serviceService.createVehicle({
+            serviceId,
+            make: v.make,
+            model: v.model,
+            year: v.year ? Number(v.year) : undefined,
+            vehicleType: v.vehicleType,
+            capacity: Number(v.capacity),
+            pricingModel: v.pricingModel,
+            dailyRate: v.pricingModel === "daily" && v.dailyRate ? Number(v.dailyRate) : undefined,
+            hourlyRate: v.pricingModel === "hourly" && v.hourlyRate ? Number(v.hourlyRate) : undefined,
+            driverIncluded: v.driverIncluded,
+            depositAmount: Number(v.depositAmount) || 0,
+            includedFeatures: v.includedFeatures,
+          });
+          const vehicleId = vr.data?.vehicleId || vr.vehicleId || vr.id;
+
+          if (vehicleId && carRentalData.availStartDate && carRentalData.availEndDate) {
+            await serviceService.bulkVehicleAvailability(vehicleId, {
+              startDate: carRentalData.availStartDate,
+              endDate: carRentalData.availEndDate,
+              availableFrom: carRentalData.availableFrom,
+              availableTo: carRentalData.availableTo,
+            });
+          }
+        }
+
+        // 3. Submit for manager review
+        await serviceService.submitCarRentalService(serviceId);
       }
 
       navigate("/PartnerService", {
@@ -1288,9 +1644,19 @@ const PartnerServiceRegistration = () => {
     );
   }
 
-  const steps = serviceType === "homestay" ? HOMESTAY_STEPS : TOUR_STEPS;
+  const steps =
+    serviceType === "homestay"
+      ? HOMESTAY_STEPS
+      : serviceType === "car-rental"
+      ? CAR_RENTAL_STEPS
+      : TOUR_STEPS;
   const isLastStep = currentStep === steps.length;
-  const typeLabel = serviceType === "homestay" ? "Homestay" : "Tour";
+  const typeLabel =
+    serviceType === "homestay"
+      ? "Homestay"
+      : serviceType === "car-rental"
+      ? "Cho thuê xe"
+      : "Tour";
 
   return (
     <div className="min-h-screen bg-bg-light p-6">
@@ -1325,6 +1691,7 @@ const PartnerServiceRegistration = () => {
               serviceType={serviceType}
               homestayData={homestayData}
               tourData={tourData}
+              carRentalData={carRentalData}
               publishError={publishError}
             />
           ) : serviceType === "homestay" ? (
@@ -1335,6 +1702,15 @@ const PartnerServiceRegistration = () => {
               updateRoom={updateHomestayRoom}
               addRoom={addRoom}
               removeRoom={removeRoom}
+            />
+          ) : serviceType === "car-rental" ? (
+            <CarRentalForm
+              step={currentStep}
+              data={carRentalData}
+              update={updateCarRental}
+              updateVehicle={updateCarRentalVehicle}
+              addVehicle={addCarRentalVehicle}
+              removeVehicle={removeCarRentalVehicle}
             />
           ) : (
             <TourForm

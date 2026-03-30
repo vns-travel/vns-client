@@ -1,4 +1,4 @@
-const BASE_URL = "https://vns-server.onrender.com";
+const BASE_URL = "http://localhost:3000";
 
 async function handleResponse(res) {
   const text = await res.text();
@@ -6,12 +6,13 @@ async function handleResponse(res) {
   if (!res.ok) {
     throw new Error(data.message || data.title || `Lỗi ${res.status}`);
   }
-  return data;
+  // Unwrap { success, data } envelope if present, else return whole object
+  return data.data !== undefined ? data.data : data;
 }
 
 export const authService = {
   async login(email, password) {
-    const res = await fetch(`${BASE_URL}/api/Auth/login`, {
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -20,7 +21,7 @@ export const authService = {
   },
 
   async registerPartner(data) {
-    const res = await fetch(`${BASE_URL}/api/Auth/register-partner`, {
+    const res = await fetch(`${BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

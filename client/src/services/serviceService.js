@@ -1,4 +1,4 @@
-const BASE_URL = "https://vns-server.onrender.com";
+const BASE_URL = "http://localhost:3000";
 
 function authHeaders() {
   const token = localStorage.getItem("vns_token");
@@ -11,15 +11,14 @@ async function handleResponse(res) {
   if (!res.ok) {
     throw new Error(data.message || data.title || `Lỗi ${res.status}`);
   }
-  return data;
+  // Unwrap { success, data } envelope if present, else return whole object/array
+  return data.data !== undefined ? data.data : data;
 }
 
 export const serviceService = {
-  // GET /api/Service?partnerId=...&includeInactive=true
-  async getPartnerServices(partnerId) {
-    const params = new URLSearchParams({ includeInactive: "true" });
-    if (partnerId) params.set("partnerId", partnerId);
-    const res = await fetch(`${BASE_URL}/api/Service?${params}`, {
+  // GET /api/partner/services — returns the authenticated partner's services
+  async getPartnerServices(_partnerId) {
+    const res = await fetch(`${BASE_URL}/api/partner/services`, {
       headers: { ...authHeaders() },
     });
     return handleResponse(res);
@@ -141,6 +140,46 @@ export const serviceService = {
   async getDestinations() {
     const res = await fetch(`${BASE_URL}/api/destinations`, {
       headers: { ...authHeaders() },
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/services (car rental company record, status=draft)
+  async createService(data) {
+    const res = await fetch(`${BASE_URL}/api/partner/services`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/vehicles (add one vehicle to a fleet)
+  async createVehicle(data) {
+    const res = await fetch(`${BASE_URL}/api/partner/vehicles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/vehicles/:vehicleId/availability/bulk
+  async bulkVehicleAvailability(vehicleId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/vehicles/${vehicleId}/availability/bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/services/:serviceId/submit (draft → pending)
+  async submitCarRentalService(serviceId) {
+    const res = await fetch(`${BASE_URL}/api/partner/services/${serviceId}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({}),
     });
     return handleResponse(res);
   },

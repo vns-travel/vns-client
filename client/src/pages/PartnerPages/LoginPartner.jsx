@@ -27,31 +27,26 @@ const LoginPartner = () => {
   };
 
   const handleSubmit = async (e) => {
-    navigate("/PartnerDashboard");
-    // e.preventDefault();
+    e.preventDefault();
 
-    // if (!form.email || !form.password) {
-    //   setError("Vui lòng nhập cả email và mật khẩu.");
-    //   return;
-    // }
+    if (!form.email || !form.password) {
+      setError("Vui lòng nhập cả email và mật khẩu.");
+      return;
+    }
 
-    // setLoading(true);
-    // try {
-    //   const data = await authService.login(form.email, form.password);
-    //   login(data);
+    setLoading(true);
+    try {
+      const data = await authService.login(form.email, form.password);
+      login(data);
 
-    //   const role = data.role || data.Role || data.userRole;
-    //   const route = ROLE_ROUTES[role];
-    //   if (route) {
-    //     navigate(route);
-    //   } else {
-    //     setError("Tài khoản không có quyền truy cập vào hệ thống này.");
-    //   }
-    // } catch (err) {
-    //   setError(err.message || "Thông tin đăng nhập không hợp lệ hoặc lỗi máy chủ.");
-    // } finally {
-    //   setLoading(false);
-    // }
+      const role = data.role || data.Role || data.userRole;
+      const route = ROLE_ROUTES[role] || ROLE_ROUTES["Partner"];
+      navigate(route);
+    } catch (err) {
+      setError(err.message || "Thông tin đăng nhập không hợp lệ hoặc lỗi máy chủ.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const tabs = [

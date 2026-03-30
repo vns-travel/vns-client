@@ -42,7 +42,18 @@
       "Bash(__NEW_LINE_989c13e5d7c9ae8e__ curl:*)",
       "Bash(PARTNER_ID=\"88661215-37ec-4ffe-a8b3-c664703acb2a\")",
       "Bash(__NEW_LINE_3fb272bd051fae57__ curl:*)",
-      "Bash(__NEW_LINE_e374e77523f06bdc__ curl:*)"
+      "Bash(__NEW_LINE_e374e77523f06bdc__ curl:*)",
+      "Bash(docker.exe compose:*)",
+      "Bash(\"C:/Program Files/Docker/Docker/resources/bin/docker.exe\" compose up -d)",
+      "Read(//usr/local/**)",
+      "Read(//mnt/c/**)",
+      "Read(//mnt/c/ProgramData/**)",
+      "Read(//usr/**)",
+      "Bash(command -v docker)",
+      "Bash(echo \"PATH: $PATH\")",
+      "Read(//c//**)",
+      "Read(//c/Users/ADMIN/AppData/Local//**)",
+      "Read(//c/ProgramData//**)"
     ]
   }
 }
