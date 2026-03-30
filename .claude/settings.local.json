@@ -11,7 +11,14 @@
       "Bash(mv .claude/add-cron.md .claude/commands/)",
       "Bash(mv .claude/add-endpoint.md .claude/commands/)",
       "Bash(mv .claude/booking-flow.md .claude/commands/)",
-      "Bash(mv .claude/debug.md .claude/commands/)"
+      "Bash(mv .claude/debug.md .claude/commands/)",
+      "Bash(node -e \"require\\(''''pg''''\\)\")",
+      "Bash(node database/migrate.js)",
+      "Bash(docker compose:*)",
+      "Bash(npm install:*)",
+      "Bash(netstat -ano)",
+      "Read(//d/STUDY/vns-client/src/server/**)",
+      "Bash(xargs -I{} taskkill /PID {} /F)"
     ]
   }
 }
