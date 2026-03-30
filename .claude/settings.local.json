@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /d/STUDY/vns-client -not -path */.git/* -not -path */node_modules/*)",
+      "Bash(mkdir -p client)",
+      "Bash(mv src:*)",
+      "Bash(mv index.html client/)",
+      "Bash(mv package.json client/)",
+      "Bash(mv package-lock.json client/)",
+      "Bash(mkdir -p .claude/commands)",
+      "Bash(mv .claude/add-cron.md .claude/commands/)",
+      "Bash(mv .claude/add-endpoint.md .claude/commands/)",
+      "Bash(mv .claude/booking-flow.md .claude/commands/)",
+      "Bash(mv .claude/debug.md .claude/commands/)"
+    ]
+  }
+}

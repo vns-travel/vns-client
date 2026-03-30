@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: vns
+      POSTGRES_PASSWORD: vns123
+      POSTGRES_DB: vns_db
+    ports:
+      - "5432:5432"
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
