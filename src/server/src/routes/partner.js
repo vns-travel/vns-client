@@ -14,6 +14,10 @@ const {
   addTourDetailsSchema,
   addItinerarySchema,
   addSchedulesSchema,
+  addHomestayDetailsSchema,
+  addRoomSchema,
+  updateRoomSchema,
+  bulkSetAvailabilitySchema,
 } = require('../validations/service');
 
 // ---------------------------------------------------------------------------
@@ -50,5 +54,20 @@ router.put('/services/:serviceId/tour/itinerary',
 
 router.post('/services/:serviceId/tour/schedules',
   auth, requireRole('partner'), validate(addSchedulesSchema), serviceController.addSchedules);
+
+// ---------------------------------------------------------------------------
+// Partner: homestay sub-resources
+// ---------------------------------------------------------------------------
+router.post('/services/:serviceId/homestay',
+  auth, requireRole('partner'), validate(addHomestayDetailsSchema), serviceController.addHomestayDetails);
+
+router.post('/services/:serviceId/homestay/rooms',
+  auth, requireRole('partner'), validate(addRoomSchema), serviceController.addRoom);
+
+router.put('/services/:serviceId/homestay/rooms/:roomId',
+  auth, requireRole('partner'), validate(updateRoomSchema), serviceController.updateRoom);
+
+router.put('/services/:serviceId/homestay/rooms/:roomId/availability',
+  auth, requireRole('partner'), validate(bulkSetAvailabilitySchema), serviceController.setRoomAvailability);
 
 module.exports = router;

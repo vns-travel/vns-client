@@ -1,19 +1,24 @@
-const serviceService = require('../services/serviceService');
-const tourService    = require('../services/tourService');
-const serviceRepo    = require('../repositories/serviceRepo');
-const response       = require('../utils/response');
+const serviceService  = require('../services/serviceService');
+const tourService     = require('../services/tourService');
+const homestayService = require('../services/homestayService');
+const serviceRepo     = require('../repositories/serviceRepo');
+const response        = require('../utils/response');
 
 // ---------------------------------------------------------------------------
 // Error routing helper — maps well-known error messages to HTTP status codes.
 // Errors that don't match fall through to the global error handler (next(err)).
 // ---------------------------------------------------------------------------
 function handleError(err, res, next) {
-  const msg = err.message;
-  if (msg.includes('not found') || msg.includes('not a tour') || msg.includes('details not found')) {
+  const msg  = err.message;
+  const low  = msg.toLowerCase();
+  if (low.includes('not found') || low.includes('not a tour') || low.includes('not a homestay') || low.includes('details not found')) {
     return response.fail(res, msg, 'NOT_FOUND', 404);
   }
-  if (msg.includes('not own') || msg.includes('approved')) {
+  if (low.includes('not own') || low.includes('does not belong') || low.includes('approved')) {
     return response.fail(res, msg, 'FORBIDDEN', 403);
+  }
+  if (low.includes('already added') || low.includes('past dates') || low.includes('check-out must be')) {
+    return response.fail(res, msg, 'VALIDATION_ERROR', 400);
   }
   next(err);
 }
@@ -104,6 +109,67 @@ async function getTourFull(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
+// Partner: homestay sub-resources
+// ---------------------------------------------------------------------------
+async function addHomestayDetails(req, res, next) {
+  try {
+    const result = await homestayService.addHomestayDetails(req.params.serviceId, req.user.userId, req.body);
+    return response.success(res, result, null, 201);
+  } catch (err) { handleError(err, res, next); }
+}
+
+async function addRoom(req, res, next) {
+  try {
+    const result = await homestayService.addRoom(req.params.serviceId, req.user.userId, req.body);
+    return response.success(res, result, null, 201);
+  } catch (err) { handleError(err, res, next); }
+}
+
+async function updateRoom(req, res, next) {
+  try {
+    const result = await homestayService.updateRoom(req.params.serviceId, req.user.userId, req.params.roomId, req.body);
+    return response.success(res, result);
+  } catch (err) { handleError(err, res, next); }
+}
+
+async function setRoomAvailability(req, res, next) {
+  try {
+    const result = await homestayService.setRoomAvailability(req.params.serviceId, req.user.userId, req.params.roomId, req.body.dates);
+    return response.success(res, result);
+  } catch (err) { handleError(err, res, next); }
+}
+
+// ---------------------------------------------------------------------------
+// Public: homestay catalog reads
+// ---------------------------------------------------------------------------
+async function getHomestayFull(req, res, next) {
+  try {
+    const result = await homestayService.getHomestayFull(req.params.serviceId);
+    return response.success(res, result);
+  } catch (err) { handleError(err, res, next); }
+}
+
+async function getRooms(req, res, next) {
+  try {
+    const result = await homestayService.getRooms(req.params.serviceId);
+    return response.success(res, result);
+  } catch (err) { handleError(err, res, next); }
+}
+
+async function getRoomAvailability(req, res, next) {
+  try {
+    const { checkIn, checkOut } = req.query;
+    const result = await homestayService.getRoomAvailability(
+      req.params.serviceId,
+      req.params.roomId,
+      checkIn,
+      checkOut
+    );
+    return response.success(res, result);
+  } catch (err) { handleError(err, res, next); }
+}
+
+// ---------------------------------------------------------------------------
 // Manager: review queue
 // ---------------------------------------------------------------------------
 async function getAllServicesManager(req, res, next) {
@@ -145,6 +211,13 @@ module.exports = {
   setItinerary,
   addSchedules,
   getTourFull,
+  addHomestayDetails,
+  addRoom,
+  updateRoom,
+  setRoomAvailability,
+  getHomestayFull,
+  getRooms,
+  getRoomAvailability,
   getAllServicesManager,
   approveService,
   rejectService,
