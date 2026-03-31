@@ -8,10 +8,15 @@ const { connectPostgres, connectMongo } = require('./src/config/db');
 require('./src/config/redis');
 
 const env = require('./src/config/env');
+const { startBookingCrons } = require('./src/jobs/bookings.cron');
 
 async function start() {
   await connectPostgres();
   await connectMongo();
+
+  // Start cron jobs after DB connections are confirmed so the first run
+  // never races against an uninitialised pg pool.
+  startBookingCrons();
 
   app.listen(env.PORT, () => {
     console.log(`VNS server listening on port ${env.PORT}`);
