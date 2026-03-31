@@ -1195,6 +1195,248 @@ async function cancelBooking({ bookingId, userId, reason, evidenceUrls }) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Cron job helpers — called by server/src/jobs/bookings.cron.js
+// ---------------------------------------------------------------------------
+
+/**
+ * Auto-expire pending bookings that were never paid within the timeout window.
+ *
+ * Targets bookings that are still 'pending' after EXPIRE_HOURS AND where every
+ * associated payment row is also still 'pending' (i.e. the user never completed
+ * checkout). Paid-but-unconfirmed bookings are excluded because cancelling them
+ * would silently discard real money — those need a manual refund path.
+ *
+ * Side effects per expired booking (identical to customer cancel, minus refund):
+ *  1. booking status → 'cancelled'
+ *  2. inventory restored (tour slots / homestay units / vehicle dates unblocked)
+ *  3. voucher usage removed so the code becomes reusable
+ *
+ * Processes at most BATCH rows per invocation to keep the transaction short.
+ * Uses FOR UPDATE SKIP LOCKED so two cron instances never compete for the same rows.
+ */
+async function expirePendingBookings() {
+  const EXPIRE_HOURS = 24;
+  const BATCH = 100;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Lock the batch atomically; SKIP LOCKED makes this safe under multiple server instances.
+    const { rows } = await client.query(
+      `SELECT
+         b.id, b.voucher_id,
+         s.type                AS service_type,
+         td.schedule_id,       td.participants,
+         hd.room_id,           hd.check_in,    hd.check_out,
+         btd.vehicle_id,       btd.rental_start, btd.rental_end
+       FROM bookings b
+       JOIN services s ON s.id = b.service_id
+       LEFT JOIN booking_tour_detail      td  ON td.booking_id  = b.id
+       LEFT JOIN booking_homestay_detail  hd  ON hd.booking_id  = b.id
+       LEFT JOIN booking_transport_detail btd ON btd.booking_id = b.id
+       WHERE b.status = 'pending'
+         AND b.created_at < NOW() - ($1 * INTERVAL '1 hour')
+         AND NOT EXISTS (
+           SELECT 1 FROM payments p
+           WHERE p.booking_id = b.id AND p.status <> 'pending'
+         )
+       ORDER BY b.created_at ASC
+       LIMIT $2
+       FOR UPDATE OF b SKIP LOCKED`,
+      [EXPIRE_HOURS, BATCH]
+    );
+
+    let cancelled = 0;
+
+    for (const ctx of rows) {
+      // 1. Cancel
+      await client.query(
+        `UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+        [ctx.id]
+      );
+
+      // 2. Restore inventory (mirrors createBooking decrements in reverse)
+      if (ctx.service_type === 'tour') {
+        await client.query(
+          `UPDATE tour_schedules
+           SET booked_slots = GREATEST(0, booked_slots - $1), updated_at = NOW()
+           WHERE id = $2`,
+          [ctx.participants, ctx.schedule_id]
+        );
+      } else if (ctx.service_type === 'homestay') {
+        const checkIn  = new Date(ctx.check_in);
+        const checkOut = new Date(ctx.check_out);
+        for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+          await client.query(
+            `UPDATE room_availability
+             SET available_units = available_units + 1
+             WHERE room_id = $1 AND date = $2`,
+            [ctx.room_id, d.toISOString().slice(0, 10)]
+          );
+        }
+      } else {
+        // car_rental — unblock each calendar day
+        const startDay = new Date(new Date(ctx.rental_start).toISOString().slice(0, 10));
+        const endDay   = new Date(new Date(ctx.rental_end).toISOString().slice(0, 10));
+        for (let d = new Date(startDay); d <= endDay; d.setDate(d.getDate() + 1)) {
+          await client.query(
+            `UPDATE vehicle_availability
+             SET is_blocked = false
+             WHERE vehicle_id = $1 AND date = $2`,
+            [ctx.vehicle_id, d.toISOString().slice(0, 10)]
+          );
+        }
+      }
+
+      // 3. Release voucher so the code can be reused
+      if (ctx.voucher_id) {
+        await client.query(
+          `DELETE FROM voucher_usages WHERE booking_id = $1`,
+          [ctx.id]
+        );
+        await client.query(
+          `UPDATE vouchers SET used_count = GREATEST(0, used_count - 1) WHERE id = $1`,
+          [ctx.voucher_id]
+        );
+      }
+
+      cancelled++;
+    }
+
+    await client.query('COMMIT');
+    return { cancelled };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Auto-transition confirmed → in_progress when the service start time arrives.
+ *
+ * Thresholds per service type:
+ *  - Tour:      tour_date + start_time (defaults to 00:00 if null) ≤ NOW()
+ *  - Homestay:  check_in date ≤ CURRENT_DATE
+ *  - Car rental: rental_start (full datetime) ≤ NOW()
+ *
+ * No inventory changes needed — this is a forward status transition only.
+ */
+async function startConfirmedBookings() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Tours: start_time defaults to midnight when not set
+    const tourRes = await client.query(
+      `UPDATE bookings b
+       SET status = 'in_progress', updated_at = NOW()
+       FROM booking_tour_detail btd
+       JOIN tour_schedules ts ON ts.id = btd.schedule_id
+       WHERE btd.booking_id = b.id
+         AND b.status = 'confirmed'
+         AND (ts.tour_date + COALESCE(ts.start_time, '00:00:00'::TIME)) <= NOW()
+       RETURNING b.id`
+    );
+
+    // Homestays: guest has arrived on check-in day
+    const homestayRes = await client.query(
+      `UPDATE bookings b
+       SET status = 'in_progress', updated_at = NOW()
+       FROM booking_homestay_detail bhd
+       WHERE bhd.booking_id = b.id
+         AND b.status = 'confirmed'
+         AND bhd.check_in <= CURRENT_DATE
+       RETURNING b.id`
+    );
+
+    // Car rentals: pickup datetime has passed
+    const carRes = await client.query(
+      `UPDATE bookings b
+       SET status = 'in_progress', updated_at = NOW()
+       FROM booking_transport_detail btd
+       WHERE btd.booking_id = b.id
+         AND b.status = 'confirmed'
+         AND btd.rental_start <= NOW()
+       RETURNING b.id`
+    );
+
+    await client.query('COMMIT');
+    return { started: tourRes.rowCount + homestayRes.rowCount + carRes.rowCount };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Auto-transition in_progress → completed when the service end time passes.
+ *
+ * Thresholds per service type:
+ *  - Tour:      COALESCE(tour_date + end_time,
+ *                        tour_date + start_time + duration_hours,
+ *                        tour_date + 23:59:59) ≤ NOW()
+ *               end_time is preferred; duration fallback handles tours where only
+ *               start time and hours are set; end-of-day covers the rest.
+ *  - Homestay:  check_out date ≤ CURRENT_DATE  (guest leaves on check_out day)
+ *  - Car rental: rental_end (full datetime) ≤ NOW()
+ */
+async function completeInProgressBookings() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const tourRes = await client.query(
+      `UPDATE bookings b
+       SET status = 'completed', updated_at = NOW()
+       FROM booking_tour_detail btd
+       JOIN tour_schedules ts ON ts.id = btd.schedule_id
+       JOIN tours t           ON t.id  = ts.tour_id
+       WHERE btd.booking_id = b.id
+         AND b.status = 'in_progress'
+         AND COALESCE(
+               ts.tour_date + ts.end_time,
+               ts.tour_date + ts.start_time + (t.duration_hours * INTERVAL '1 hour'),
+               ts.tour_date + '23:59:59'::TIME
+             ) <= NOW()
+       RETURNING b.id`
+    );
+
+    const homestayRes = await client.query(
+      `UPDATE bookings b
+       SET status = 'completed', updated_at = NOW()
+       FROM booking_homestay_detail bhd
+       WHERE bhd.booking_id = b.id
+         AND b.status = 'in_progress'
+         AND bhd.check_out <= CURRENT_DATE
+       RETURNING b.id`
+    );
+
+    const carRes = await client.query(
+      `UPDATE bookings b
+       SET status = 'completed', updated_at = NOW()
+       FROM booking_transport_detail btd
+       WHERE btd.booking_id = b.id
+         AND b.status = 'in_progress'
+         AND btd.rental_end <= NOW()
+       RETURNING b.id`
+    );
+
+    await client.query('COMMIT');
+    return { completed: tourRes.rowCount + homestayRes.rowCount + carRes.rowCount };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   createBooking,
   listMyBookings,
@@ -1202,4 +1444,7 @@ module.exports = {
   listPartnerBookings,
   transitionStatus,
   cancelBooking,
+  expirePendingBookings,
+  startConfirmedBookings,
+  completeInProgressBookings,
 };

@@ -31,6 +31,8 @@ import ManagerRefund from "./pages/ManagerPages/ManagerRefund";
 import AdminLayout from "./pages/AdminPages/AdminLayout";
 import AdminDashboard from "./pages/AdminPages/AdminDashboard";
 import AdminUserManagement from "./pages/AdminPages/AdminUserManagement";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 
 function App() {
   return (
@@ -40,6 +42,8 @@ function App() {
         <Route path="/LoginPartner" element={<LoginPartner />} />
         <Route path="/RegisterPartner" element={<RegisterPartner />} />
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
 
         {/* Manager routes */}
         <Route element={<ManagerLayout />}>
