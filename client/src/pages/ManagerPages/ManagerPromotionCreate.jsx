@@ -12,10 +12,13 @@ import {
   FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { voucherService, SCOPE_OPTIONS, scopeValueToTypes } from "../../services/voucherService";
 
 const ManagerPromotionCreate = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -23,11 +26,10 @@ const ManagerPromotionCreate = () => {
     discountType: "percentage",
     discountValue: "",
     minOrderValue: "",
-    applicableServices: "",
+    applicableServices: "all",
     validFrom: "",
     validUntil: "",
     usageLimit: "",
-    maxUsesPerCustomer: 1,
   });
 
   const steps = [
@@ -46,6 +48,29 @@ const ManagerPromotionCreate = () => {
 
   const nextStep = () => setCurrentStep((s) => Math.min(s + 1, 5));
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await voucherService.createVoucher({
+        name:        formData.name,
+        description: formData.description || undefined,
+        code:        formData.promoCode,
+        type:        formData.discountType === "percentage" ? "percent" : "fixed",
+        value:       Number(formData.discountValue),
+        minSpend:    formData.minOrderValue ? Number(formData.minOrderValue) : 0,
+        maxUses:     formData.usageLimit ? Number(formData.usageLimit) : undefined,
+        validFrom:   formData.validFrom   || undefined,
+        validTo:     formData.validUntil  || undefined,
+        applicableServiceTypes: scopeValueToTypes(formData.applicableServices),
+      });
+      navigate("/ManagerPromotion");
+    } catch (err) {
+      setSubmitError(err.message);
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-bg-light p-6">
@@ -252,32 +277,10 @@ const ManagerPromotionCreate = () => {
                   onChange={(e) => update("applicableServices", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
                 >
-                  <option value="">Chọn phạm vi áp dụng</option>
-                  <option value="Tất cả dịch vụ">Tất cả dịch vụ</option>
-                  <option value="Tất cả phòng và villa">
-                    Tất cả phòng và villa
-                  </option>
-                  <option value="Tour và lưu trú">Tour và lưu trú</option>
-                  <option value="Phòng Deluxe và Suite">
-                    Phòng Deluxe và Suite
-                  </option>
-                  <option value="Combo dịch vụ">Combo dịch vụ</option>
-                  <option value="Thuê xe">Thuê xe</option>
+                  {SCOPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Số lần sử dụng tối đa mỗi khách hàng
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={formData.maxUsesPerCustomer}
-                  onChange={(e) =>
-                    update("maxUsesPerCustomer", Number(e.target.value))
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                />
               </div>
             </div>
           )}
@@ -381,10 +384,7 @@ const ManagerPromotionCreate = () => {
                       Áp dụng cho
                     </p>
                     <p className="text-sm text-gray-700">
-                      {formData.applicableServices || "—"}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Tối đa {formData.maxUsesPerCustomer} lần/khách
+                      {SCOPE_OPTIONS.find((o) => o.value === formData.applicableServices)?.label ?? "—"}
                     </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -416,6 +416,13 @@ const ManagerPromotionCreate = () => {
           )}
         </div>
 
+        {/* Submit error */}
+        {submitError && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+            {submitError}
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between mt-6">
           <button
@@ -425,6 +432,7 @@ const ManagerPromotionCreate = () => {
                 : prevStep
             }
             className="flex items-center gap-2 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            disabled={submitting}
           >
             <ArrowLeft className="w-4 h-4" />
             {currentStep === 1 ? "Hủy" : "Quay lại"}
@@ -439,11 +447,12 @@ const ManagerPromotionCreate = () => {
             </button>
           ) : (
             <button
-              onClick={() => navigate("/ManagerPromotion")}
-              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium disabled:opacity-60"
             >
               <CheckCircle className="w-4 h-4" />
-              Tạo Khuyến mãi
+              {submitting ? "Đang tạo..." : "Tạo Khuyến mãi"}
             </button>
           )}
         </div>

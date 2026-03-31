@@ -26,12 +26,13 @@ async function createBooking(req, res, next) {
 
 async function listMyBookings(req, res, next) {
   try {
+    // page/limit are already coerced integers from validateQuery(listQuerySchema).
     const { status, page, limit } = req.query;
     const result = await service.listMyBookings({
       userId: req.user.id,
       status: status || null,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
+      page,
+      limit,
     });
     res.json({ success: true, data: result.data, meta: result.meta });
   } catch (err) {
@@ -55,13 +56,14 @@ async function getBookingDetail(req, res, next) {
 
 async function listPartnerBookings(req, res, next) {
   try {
+    // page/limit/serviceId are already coerced/validated from validateQuery(listQuerySchema).
     const { status, serviceId, page, limit } = req.query;
     const result = await service.listPartnerBookings({
       partnerId: req.user.partnerId,
       status: status || null,
       serviceId: serviceId || null,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
+      page,
+      limit,
     });
     res.json({ success: true, data: result.data, meta: result.meta });
   } catch (err) {
