@@ -6,6 +6,7 @@ import {
   MessageCircleMore,
   TicketPercent,
   User,
+  RotateCcw,
 } from "lucide-react";
 import SideBar from "../../components/SideBar";
 import { Outlet } from "react-router-dom";
@@ -44,6 +45,11 @@ const PartnerLayout = () => {
             path: "/PartnerBooking",
             label: "Đặt Chỗ",
             icon: <CalendarCheck />,
+          },
+          {
+            path: "/PartnerRefund",
+            label: "Hoàn Tiền",
+            icon: <RotateCcw />,
           },
           {
             path: "/PartnerMessaging",

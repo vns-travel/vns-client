@@ -19,6 +19,7 @@ import ManagerDashboard from "./pages/ManagerPages/ManagerDashboard";
 import ManagerLayout from "./pages/ManagerPages/ManagerLayout";
 import PartnerCombo from "./pages/PartnerPages/PartnerCombo";
 import PartnerComboCreate from "./pages/PartnerPages/PartnerComboCreate";
+import PartnerRefund from "./pages/PartnerPages/PartnerRefund";
 import ManagerPromotion from "./pages/ManagerPages/ManagerPromotion";
 import ManagerPromotionCreate from "./pages/ManagerPages/ManagerPromotionCreate";
 import ManagerPromotionDetails from "./pages/ManagerPages/ManagerPromotionDetails";
@@ -103,6 +104,7 @@ function App() {
           <Route path="/PartnerProfile" element={<PartnerProfile />} />
           <Route path="/PartnerCombo" element={<PartnerCombo />} />
           <Route path="/PartnerCombo/create" element={<PartnerComboCreate />} />
+          <Route path="/PartnerRefund" element={<PartnerRefund />} />
           <Route path="/PartnerMessaging" element={<PartnerMessaging />} />
         </Route>
       </Routes>
