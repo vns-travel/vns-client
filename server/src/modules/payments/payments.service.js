@@ -5,6 +5,7 @@
 const { pool } = require('../../config/db');
 const payos = require('../../config/payos');
 const env = require('../../config/env');
+const { notify } = require('../notifications/notifications.service');
 
 /**
  * Fetch all payment records for a given booking.
@@ -239,6 +240,22 @@ async function handlePayosWebhook(webhookBody) {
   } finally {
     client.release();
   }
+
+  // Fire-and-forget: notify the customer their payment succeeded and booking
+  // is now confirmed. Query user_id here (post-commit) so we never hold a
+  // connection during the notification insert.
+  pool.query(`SELECT user_id FROM bookings WHERE id = $1`, [payment.booking_id])
+    .then(({ rows }) => {
+      if (rows.length) {
+        notify(rows[0].user_id, {
+          title: 'Thanh toán thành công',
+          body:  'Thanh toán của bạn đã được xác nhận. Booking đã được xác nhận!',
+          type:  'payment',
+          refId: payment.booking_id,
+        });
+      }
+    })
+    .catch((err) => console.error('[notifications] payment webhook notify failed:', err.message));
 
   return { acknowledged: true };
 }

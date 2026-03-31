@@ -18,9 +18,11 @@ import {
   TrendingUp,
   Loader2,
   AlertCircle,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { serviceService, SERVICE_TYPE } from "../../services/serviceService";
+import { reviewService } from "../../services/reviewService";
 
 const formatPrice = (n) =>
   n != null ? new Intl.NumberFormat("vi-VN").format(n) + " ₫" : "—";
@@ -168,6 +170,93 @@ const ImagesTab = ({ images }) => {
   );
 };
 
+/* ─── Reviews Tab ─── */
+const StarDisplay = ({ rating }) => (
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star
+        key={n}
+        className={`w-3.5 h-3.5 ${n <= rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+      />
+    ))}
+  </div>
+);
+
+const ReviewsTab = ({ serviceId }) => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    reviewService
+      .getReviewsByService(serviceId)
+      .then(setReviews)
+      .catch((err) => setError(err.message || "Không thể tải đánh giá."))
+      .finally(() => setLoading(false));
+  }, [serviceId]);
+
+  if (loading)
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+
+  if (error)
+    return <p className="text-sm text-red-500 italic">{error}</p>;
+
+  if (reviews.length === 0)
+    return <p className="text-sm text-gray-400 italic">Chưa có đánh giá nào.</p>;
+
+  const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <h3 className="font-semibold text-gray-800 text-lg">Đánh giá từ khách</h3>
+        <div className="flex items-center gap-1.5 bg-yellow-50 px-3 py-1 rounded-full">
+          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+          <span className="text-sm font-bold text-gray-800">{avg.toFixed(1)}</span>
+          <span className="text-xs text-gray-500">({reviews.length} đánh giá)</span>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {reviews.map((r) => (
+          <div key={r.id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">
+                  {r.reviewer_name || "Khách hàng"}
+                </p>
+                <StarDisplay rating={r.rating} />
+              </div>
+              <p className="text-xs text-gray-400 whitespace-nowrap">
+                {new Date(r.created_at).toLocaleDateString("vi-VN")}
+              </p>
+            </div>
+            {r.comment && (
+              <p className="text-sm text-gray-600 leading-relaxed">{r.comment}</p>
+            )}
+            {r.image_urls && r.image_urls.length > 0 && (
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {r.image_urls.map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt=""
+                    className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* ─── Main Component ─── */
 const PartnerServiceDetails = () => {
   const navigate = useNavigate();
@@ -242,7 +331,8 @@ const PartnerServiceDetails = () => {
         ]
       : [];
   const imagTab = [{ id: "images", label: "Hình ảnh", icon: Camera }];
-  const tabs = [...baseTabs, ...extraTabs, ...imagTab];
+  const reviewTab = [{ id: "reviews", label: "Đánh giá", icon: MessageSquare }];
+  const tabs = [...baseTabs, ...extraTabs, ...imagTab, ...reviewTab];
 
   return (
     <div className="min-h-screen bg-bg-light p-6">
@@ -475,6 +565,9 @@ const PartnerServiceDetails = () => {
 
             {/* Images tab */}
             {activeTab === "images" && <ImagesTab images={images} />}
+
+            {/* Reviews tab */}
+            {activeTab === "reviews" && <ReviewsTab serviceId={serviceId} />}
           </div>
         </div>
       </div>

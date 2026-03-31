@@ -1,0 +1,1 @@
+ALTER TABLE combos ADD COLUMN IF NOT EXISTS rejection_reason TEXT;

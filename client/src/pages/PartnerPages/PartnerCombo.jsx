@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { comboService } from "../../services/comboService";
 import {
   Search,
   Filter,
@@ -42,6 +43,8 @@ const PartnerCombo = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewItem, setViewItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const [combosAndPromotions, setCombosAndPromotions] = useState([
     {
@@ -255,6 +258,50 @@ const PartnerCombo = () => {
     },
   ]);
 
+  // Normalise API combo shape to the field names the existing UI expects
+  function normalise(c) {
+    return {
+      id:            c.comboId,
+      type:          "combo",
+      name:          c.title,
+      description:   c.description || "",
+      status:        c.status,           // pending | approved | rejected
+      originalPrice: c.originalPrice,
+      currentPrice:  c.discountedPrice,
+      discount:      c.originalPrice > 0
+        ? Math.round((1 - c.discountedPrice / c.originalPrice) * 100)
+        : 0,
+      validFrom:     c.validFrom,
+      validUntil:    c.validTo,
+      maxBookings:   c.maxBookings,
+      bookings:      c.currentBookings || 0,
+      revenue:       0,
+      views:         0,
+      rating:        0,
+      conversionRate: 0,
+      services:      [],          // detail endpoint would give full list
+      serviceCount:  c.serviceCount,
+      rejectionReason: c.rejectionReason,
+      created:       c.createdAt,
+      customerSavings: 0,
+    };
+  }
+
+  async function loadCombos() {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const raw = await comboService.listPartnerCombos();
+      setCombosAndPromotions((Array.isArray(raw) ? raw : []).map(normalise));
+    } catch (err) {
+      setLoadError(err.message || "Không thể tải danh sách combo.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadCombos(); }, []);
+
   const handleDelete = (id) => {
     setCombosAndPromotions((prev) => prev.filter((item) => item.id !== id));
     setDeleteId(null);
@@ -268,33 +315,27 @@ const PartnerCombo = () => {
     return new Intl.NumberFormat("vi-VN").format(num);
   };
 
+  const STATUS_LABEL = {
+    pending:  "Chờ duyệt",
+    approved: "Đã duyệt",
+    rejected: "Bị từ chối",
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "paused":
-        return "bg-yellow-100 text-yellow-800";
-      case "expired":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case "approved": return "bg-green-100 text-green-800";
+      case "pending":  return "bg-yellow-100 text-yellow-800";
+      case "rejected": return "bg-red-100 text-red-800";
+      default:         return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "active":
-        return <CheckCircle className="w-4 h-4" />;
-      case "draft":
-        return <Clock className="w-4 h-4" />;
-      case "paused":
-        return <PauseCircle className="w-4 h-4" />;
-      case "expired":
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
+      case "approved": return <CheckCircle className="w-4 h-4" />;
+      case "pending":  return <Clock className="w-4 h-4" />;
+      case "rejected": return <XCircle className="w-4 h-4" />;
+      default:         return <Clock className="w-4 h-4" />;
     }
   };
 
@@ -480,10 +521,9 @@ const PartnerCombo = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang hoạt động</option>
-              <option value="draft">Bản nháp</option>
-              <option value="paused">Tạm dừng</option>
-              <option value="expired">Đã hết hạn</option>
+              <option value="pending">Chờ duyệt</option>
+              <option value="approved">Đã duyệt</option>
+              <option value="rejected">Bị từ chối</option>
             </select>
 
             {/* Sort */}
@@ -498,8 +538,12 @@ const PartnerCombo = () => {
             </select>
 
             {/* Refresh */}
-            <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <RefreshCw className="w-5 h-5 text-gray-600" />
+            <button
+              onClick={loadCombos}
+              disabled={loading}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -547,7 +591,22 @@ const PartnerCombo = () => {
           </div>
         </div>
 
+        {/* Loading / Error states */}
+        {loadError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {loadError}
+          </div>
+        )}
+        {loading && (
+          <div className="flex justify-center py-12 text-gray-400 text-sm gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Đang tải...
+          </div>
+        )}
+
         {/* Items Grid */}
+        {!loading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {sortedItems.map((item) => {
             const statusInfo = getStatusIcon(item.status);
@@ -573,13 +632,7 @@ const PartnerCombo = () => {
                           className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(item.status)}`}
                         >
                           {statusInfo}
-                          {item.status === "active"
-                            ? "Đang hoạt động"
-                            : item.status === "draft"
-                              ? "Bản nháp"
-                              : item.status === "paused"
-                                ? "Tạm dừng"
-                                : "Đã hết hạn"}
+                          {STATUS_LABEL[item.status] ?? item.status}
                         </span>
                         {item.trending && (
                           <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center gap-1">
@@ -886,8 +939,11 @@ const PartnerCombo = () => {
           })}
         </div>
 
+        </div>
+        )}
+
         {/* Empty State */}
-        {sortedItems.length === 0 && (
+        {!loading && sortedItems.length === 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               {activeTab === "combo" ? (
@@ -945,7 +1001,7 @@ const PartnerCombo = () => {
               <div>
                 <span className="font-medium text-gray-700">Trạng thái:</span>
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(viewItem.status)}`}>
-                  {viewItem.status === "active" ? "Đang hoạt động" : viewItem.status === "draft" ? "Bản nháp" : viewItem.status === "paused" ? "Tạm dừng" : "Đã hết hạn"}
+                  {STATUS_LABEL[viewItem.status] ?? viewItem.status}
                 </span>
               </div>
               <div>
@@ -981,17 +1037,14 @@ const PartnerCombo = () => {
                 <span className="ml-2 text-gray-900">{new Date(viewItem.validUntil).toLocaleDateString("vi-VN")}</span>
               </div>
             </div>
-            {viewItem.services && (
-              <div>
-                <p className="font-medium text-gray-700 mb-2">Dịch vụ bao gồm:</p>
-                <ul className="space-y-1">
-                  {viewItem.services.map((s, i) => (
-                    <li key={i} className="flex items-start text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
+            <div>
+              <span className="font-medium text-gray-700">Số dịch vụ:</span>
+              <span className="ml-2 text-gray-900">{viewItem.serviceCount ?? viewItem.services?.length ?? 0}</span>
+            </div>
+            {viewItem.rejectionReason && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <p className="font-medium mb-1">Lý do từ chối:</p>
+                <p>{viewItem.rejectionReason}</p>
               </div>
             )}
           </div>

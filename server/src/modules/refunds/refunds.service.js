@@ -3,6 +3,7 @@
 // Throw plain Error objects with a statusCode property to signal HTTP errors.
 
 const { pool } = require('../../config/db');
+const { notify } = require('../notifications/notifications.service');
 
 // ---------------------------------------------------------------------------
 // Pure helper — no I/O, exported for use by bookings.service.js too.
@@ -228,7 +229,8 @@ async function processRefund({ refundId, partnerId, action, approvedAmount, reje
     // Lock the refund row and verify ownership in one query
     const { rows } = await client.query(
       `SELECT r.id, r.status, r.requested_amount,
-              s.partner_id
+              s.partner_id,
+              b.user_id AS customer_id
        FROM refunds r
        JOIN bookings b ON b.id = r.booking_id
        JOIN services s ON s.id = b.service_id
@@ -280,13 +282,36 @@ async function processRefund({ refundId, partnerId, action, approvedAmount, reje
     await client.query('COMMIT');
 
     const r = updated[0];
-    return {
+    const result = {
       refundId:        r.id,
       status:          r.status,
       approvedAmount:  r.approved_amount !== null ? Number(r.approved_amount) : null,
       rejectionReason: r.rejection_reason || null,
       processedAt:     r.processed_at,
     };
+
+    // Fire-and-forget: notify the customer of the refund decision.
+    const customerId = refund.customer_id;
+    if (customerId) {
+      if (action === 'approve') {
+        const formatted = new Intl.NumberFormat('vi-VN').format(Number(r.approved_amount));
+        notify(customerId, {
+          title: 'Yêu cầu hoàn tiền được duyệt',
+          body:  `Yêu cầu hoàn tiền ${formatted} ₫ của bạn đã được duyệt.`,
+          type:  'payment',
+          refId: refundId,
+        });
+      } else {
+        notify(customerId, {
+          title: 'Yêu cầu hoàn tiền bị từ chối',
+          body:  `Yêu cầu hoàn tiền của bạn đã bị từ chối. Lý do: ${rejectionReason || 'không có lý do cụ thể'}.`,
+          type:  'payment',
+          refId: refundId,
+        });
+      }
+    }
+
+    return result;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

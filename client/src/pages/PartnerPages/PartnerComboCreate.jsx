@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Package,
   FileText,
@@ -10,22 +10,43 @@ import {
   Plus,
   Trash2,
   Tag,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { comboService } from "../../services/comboService";
+import { serviceService } from "../../services/serviceService";
 
 const PartnerComboCreate = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  // Partner's own services — loaded on mount for step 2 selector
+  const [partnerServices, setPartnerServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+
   const [formData, setFormData] = useState({
-    name: "",
+    title: "",
     description: "",
-    services: [""],
+    // Each entry: { serviceId, includedFeatures, quantity }
+    services: [{ serviceId: "", includedFeatures: "", quantity: 1 }],
     originalPrice: "",
     discount: 0,
     validFrom: "",
-    validUntil: "",
+    validTo: "",
     maxBookings: "",
   });
+
+  useEffect(() => {
+    setServicesLoading(true);
+    serviceService
+      .getPartnerServices()
+      .then((data) => setPartnerServices(Array.isArray(data) ? data : []))
+      .catch(() => setPartnerServices([]))
+      .finally(() => setServicesLoading(false));
+  }, []);
 
   const steps = [
     { id: 1, title: "Thông tin cơ bản", icon: Package },
@@ -38,30 +59,66 @@ const PartnerComboCreate = () => {
   const update = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const updateService = (index, value) => {
+  const updateServiceItem = (index, field, value) => {
     const updated = [...formData.services];
-    updated[index] = value;
+    updated[index] = { ...updated[index], [field]: value };
     update("services", updated);
   };
 
-  const addService = () => update("services", [...formData.services, ""]);
+  const addServiceItem = () =>
+    update("services", [
+      ...formData.services,
+      { serviceId: "", includedFeatures: "", quantity: 1 },
+    ]);
 
-  const removeService = (index) =>
+  const removeServiceItem = (index) =>
     update(
       "services",
       formData.services.filter((_, i) => i !== index)
     );
 
-  const currentPrice =
-    formData.originalPrice && formData.discount
-      ? Math.round(formData.originalPrice * (1 - formData.discount / 100))
-      : formData.originalPrice || 0;
+  const discountedPrice =
+    formData.originalPrice && formData.discount !== undefined
+      ? Math.round(Number(formData.originalPrice) * (1 - Number(formData.discount) / 100))
+      : Number(formData.originalPrice) || 0;
 
   const formatPrice = (price) =>
     new Intl.NumberFormat("vi-VN").format(price) + " ₫";
 
   const nextStep = () => setCurrentStep((s) => Math.min(s + 1, 5));
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const validServices = formData.services.filter((s) => s.serviceId);
+      await comboService.createCombo({
+        title:           formData.title,
+        description:     formData.description || undefined,
+        originalPrice:   Number(formData.originalPrice),
+        discountedPrice: discountedPrice,
+        maxBookings:     formData.maxBookings ? Number(formData.maxBookings) : undefined,
+        validFrom:       formData.validFrom ? new Date(formData.validFrom).toISOString() : undefined,
+        validTo:         formData.validTo   ? new Date(formData.validTo).toISOString()   : undefined,
+        services:        validServices.map((s, i) => ({
+          serviceId:        s.serviceId,
+          quantity:         Number(s.quantity) || 1,
+          includedFeatures: s.includedFeatures || undefined,
+          sequenceOrder:    i + 1,
+        })),
+      });
+      navigate("/PartnerCombo");
+    } catch (err) {
+      setSubmitError(err.message || "Không thể tạo combo, vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Find service title by ID for the confirmation summary
+  const serviceTitle = (id) =>
+    partnerServices.find((s) => s.id === id || s.serviceId === id)?.title || id;
 
   return (
     <div className="min-h-screen bg-bg-light p-6">
@@ -140,8 +197,8 @@ const PartnerComboCreate = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => update("name", e.target.value)}
+                  value={formData.title}
+                  onChange={(e) => update("title", e.target.value)}
                   placeholder="VD: Trải nghiệm Hà Nội hoàn hảo 3N2Đ"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
@@ -161,36 +218,88 @@ const PartnerComboCreate = () => {
             </div>
           )}
 
-          {/* Step 2: Services */}
+          {/* Step 2: Services — pick from real partner services */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Dịch vụ bao gồm
               </h2>
               <p className="text-sm text-gray-500">
-                Liệt kê các dịch vụ có trong combo này.
+                Chọn các dịch vụ của bạn để đưa vào combo này.
               </p>
-              {formData.services.map((service, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={service}
-                    onChange={(e) => updateService(index, e.target.value)}
-                    placeholder={`Dịch vụ ${index + 1} (VD: Phòng Deluxe 2 đêm)`}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
-                  {formData.services.length > 1 && (
-                    <button
-                      onClick={() => removeService(index)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+
+              {servicesLoading && (
+                <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Đang tải danh sách dịch vụ...
+                </div>
+              )}
+
+              {!servicesLoading && partnerServices.length === 0 && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-yellow-700">
+                    Bạn chưa có dịch vụ nào được duyệt. Hãy tạo và đăng dịch vụ trước khi tạo combo.
+                  </p>
+                </div>
+              )}
+
+              {formData.services.map((item, index) => (
+                <div key={index} className="grid grid-cols-12 gap-2 items-start">
+                  <div className="col-span-5">
+                    <select
+                      value={item.serviceId}
+                      onChange={(e) => updateServiceItem(index, "serviceId", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white text-sm"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                      <option value="">— Chọn dịch vụ —</option>
+                      {partnerServices.map((svc) => (
+                        <option key={svc.id || svc.serviceId} value={svc.id || svc.serviceId}>
+                          {svc.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-4">
+                    <input
+                      type="text"
+                      value={item.includedFeatures}
+                      onChange={(e) => updateServiceItem(index, "includedFeatures", e.target.value)}
+                      placeholder="Chi tiết (VD: 2 đêm)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(e) => updateServiceItem(index, "quantity", e.target.value)}
+                      placeholder="SL"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                    />
+                  </div>
+                  <div className="col-span-1 flex justify-center pt-2">
+                    {formData.services.length > 1 && (
+                      <button
+                        onClick={() => removeServiceItem(index)}
+                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
+
+              <div className="flex gap-1 text-xs text-gray-400 px-1 -mt-1">
+                <span className="w-5/12">Dịch vụ</span>
+                <span className="w-4/12">Chi tiết bao gồm</span>
+                <span className="w-2/12">Số lượng</span>
+              </div>
+
               <button
-                onClick={addService}
+                onClick={addServiceItem}
                 className="flex items-center gap-2 text-primary hover:text-primary-hover text-sm font-medium mt-2"
               >
                 <Plus className="w-4 h-4" />
@@ -212,9 +321,7 @@ const PartnerComboCreate = () => {
                 <input
                   type="number"
                   value={formData.originalPrice}
-                  onChange={(e) =>
-                    update("originalPrice", Number(e.target.value))
-                  }
+                  onChange={(e) => update("originalPrice", e.target.value)}
                   placeholder="VD: 5000000"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
@@ -226,14 +333,14 @@ const PartnerComboCreate = () => {
                 <input
                   type="number"
                   min={0}
-                  max={100}
+                  max={99}
                   value={formData.discount}
-                  onChange={(e) => update("discount", Number(e.target.value))}
+                  onChange={(e) => update("discount", e.target.value)}
                   placeholder="0"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
-              {formData.originalPrice > 0 && (
+              {Number(formData.originalPrice) > 0 && (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center gap-2 text-green-800">
                     <Tag className="w-4 h-4" />
@@ -241,13 +348,13 @@ const PartnerComboCreate = () => {
                       Giá bán sau giảm:
                     </span>
                     <span className="text-lg font-bold">
-                      {formatPrice(currentPrice)}
+                      {formatPrice(discountedPrice)}
                     </span>
                   </div>
-                  {formData.discount > 0 && (
+                  {Number(formData.discount) > 0 && (
                     <p className="text-xs text-green-600 mt-1">
                       Khách tiết kiệm:{" "}
-                      {formatPrice(formData.originalPrice - currentPrice)}
+                      {formatPrice(Number(formData.originalPrice) - discountedPrice)}
                     </p>
                   )}
                 </div>
@@ -264,7 +371,7 @@ const PartnerComboCreate = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngày bắt đầu <span className="text-red-500">*</span>
+                    Ngày bắt đầu
                   </label>
                   <input
                     type="date"
@@ -275,12 +382,12 @@ const PartnerComboCreate = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngày kết thúc <span className="text-red-500">*</span>
+                    Ngày kết thúc
                   </label>
                   <input
                     type="date"
-                    value={formData.validUntil}
-                    onChange={(e) => update("validUntil", e.target.value)}
+                    value={formData.validTo}
+                    onChange={(e) => update("validTo", e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -307,13 +414,21 @@ const PartnerComboCreate = () => {
               <h2 className="text-lg font-semibold text-gray-900 mb-6">
                 Xác nhận & Đăng
               </h2>
+
+              {submitError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  {submitError}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-xs font-medium text-gray-500 uppercase mb-1">
                     Tên combo
                   </p>
                   <p className="font-semibold text-gray-900">
-                    {formData.name || "—"}
+                    {formData.title || "—"}
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -327,16 +442,19 @@ const PartnerComboCreate = () => {
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-xs font-medium text-gray-500 uppercase mb-2">
                     Dịch vụ bao gồm (
-                    {formData.services.filter(Boolean).length})
+                    {formData.services.filter((s) => s.serviceId).length})
                   </p>
                   <ul className="space-y-1">
-                    {formData.services.filter(Boolean).map((s, i) => (
+                    {formData.services.filter((s) => s.serviceId).map((s, i) => (
                       <li
                         key={i}
                         className="flex items-center gap-2 text-sm text-gray-700"
                       >
                         <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                        {s}
+                        {serviceTitle(s.serviceId)}
+                        {s.includedFeatures && (
+                          <span className="text-gray-400 text-xs">— {s.includedFeatures}</span>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -347,11 +465,11 @@ const PartnerComboCreate = () => {
                       Giá bán
                     </p>
                     <p className="font-bold text-primary text-lg">
-                      {formatPrice(currentPrice)}
+                      {formatPrice(discountedPrice)}
                     </p>
-                    {formData.discount > 0 && (
+                    {Number(formData.discount) > 0 && (
                       <p className="text-xs text-gray-500 line-through">
-                        {formatPrice(formData.originalPrice)}
+                        {formatPrice(Number(formData.originalPrice))}
                       </p>
                     )}
                   </div>
@@ -361,15 +479,11 @@ const PartnerComboCreate = () => {
                     </p>
                     <p className="text-sm text-gray-700">
                       {formData.validFrom
-                        ? new Date(formData.validFrom).toLocaleDateString(
-                            "vi-VN"
-                          )
+                        ? new Date(formData.validFrom).toLocaleDateString("vi-VN")
                         : "—"}{" "}
                       —{" "}
-                      {formData.validUntil
-                        ? new Date(formData.validUntil).toLocaleDateString(
-                            "vi-VN"
-                          )
+                      {formData.validTo
+                        ? new Date(formData.validTo).toLocaleDateString("vi-VN")
                         : "—"}
                     </p>
                     {formData.maxBookings && (
@@ -378,6 +492,10 @@ const PartnerComboCreate = () => {
                       </p>
                     )}
                   </div>
+                </div>
+
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                  Combo sẽ được gửi lên để manager duyệt trước khi hiển thị cho khách hàng.
                 </div>
               </div>
             </div>
@@ -390,7 +508,8 @@ const PartnerComboCreate = () => {
             onClick={
               currentStep === 1 ? () => navigate("/PartnerCombo") : prevStep
             }
-            className="flex items-center gap-2 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            disabled={submitting}
+            className="flex items-center gap-2 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
             <ArrowLeft className="w-4 h-4" />
             {currentStep === 1 ? "Hủy" : "Quay lại"}
@@ -405,11 +524,16 @@ const PartnerComboCreate = () => {
             </button>
           ) : (
             <button
-              onClick={() => navigate("/PartnerCombo")}
-              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium disabled:opacity-50"
             >
-              <CheckCircle className="w-4 h-4" />
-              Đăng Combo
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4" />
+              )}
+              {submitting ? "Đang gửi..." : "Đăng Combo"}
             </button>
           )}
         </div>

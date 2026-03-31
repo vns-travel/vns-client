@@ -11,11 +11,6 @@ const initiateSchema = z.object({
   bookingId: z.string().uuid(),
 });
 
-// GET /api/payments/:bookingId
-// Returns all payment records for a booking.
-// Auth check (owner vs partner vs manager) is handled in the service layer.
-router.get('/:bookingId', authenticate, controller.getByBooking);
-
 // POST /api/payments/initiate
 // Creates a PayOS checkout link for a pending booking.
 // Body: { bookingId }
@@ -28,10 +23,17 @@ router.post('/payos/webhook', controller.payosWebhook);
 
 // GET /api/payments/earnings/partner
 // Returns the authenticated partner's revenue summary and recent transactions.
+// Must be registered before /:bookingId to prevent Express matching 'earnings' as a bookingId.
 router.get('/earnings/partner', authenticate, requireRoles('partner'), controller.partnerEarnings);
 
 // GET /api/payments/earnings/platform
 // Returns platform-wide revenue stats and per-partner breakdown.
 router.get('/earnings/platform', authenticate, requireRoles('manager', 'super_admin'), controller.platformRevenue);
+
+// GET /api/payments/:bookingId
+// Returns all payment records for a booking.
+// Auth check (owner vs partner vs manager) is handled in the service layer.
+// Kept last so static paths above are matched first.
+router.get('/:bookingId', authenticate, controller.getByBooking);
 
 module.exports = router;

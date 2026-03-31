@@ -5,6 +5,7 @@
 const { randomUUID } = require('crypto');
 const { pool } = require('../../config/db');
 const redis = require('../../config/redis');
+const { notify } = require('../notifications/notifications.service');
 
 // ---------------------------------------------------------------------------
 // Status transition maps — defines which transitions are legal per actor role.
@@ -911,7 +912,7 @@ async function listPartnerBookings({ partnerId, status, serviceId, page = 1, lim
  */
 async function transitionStatus({ bookingId, newStatus, actorRole, actorPartnerId }) {
   const { rows } = await pool.query(
-    `SELECT b.id, b.status, s.partner_id
+    `SELECT b.id, b.status, b.user_id, s.partner_id, s.title AS service_title
      FROM bookings b
      LEFT JOIN services s ON s.id = b.service_id
      WHERE b.id = $1`,
@@ -962,6 +963,22 @@ async function transitionStatus({ bookingId, newStatus, actorRole, actorPartnerI
     throw err;
   } finally {
     client.release();
+  }
+
+  // Fire-and-forget: notify the customer about the status change.
+  // This runs after the transaction commits so a notification failure
+  // never rolls back the booking update.
+  const serviceLabel = booking.service_title || 'dịch vụ';
+  const STATUS_MESSAGES = {
+    confirmed:   { title: 'Booking đã được xác nhận', body: `Booking "${serviceLabel}" của bạn đã được đối tác xác nhận.` },
+    cancelled:   { title: 'Booking đã bị hủy',        body: `Booking "${serviceLabel}" của bạn đã bị hủy.` },
+    in_progress: { title: 'Dịch vụ đang diễn ra',     body: `Dịch vụ "${serviceLabel}" của bạn đang trong quá trình thực hiện.` },
+    completed:   { title: 'Dịch vụ hoàn thành',       body: `Dịch vụ "${serviceLabel}" đã hoàn thành. Hãy để lại đánh giá nhé!` },
+    refunded:    { title: 'Đã hoàn tiền',              body: `Booking "${serviceLabel}" của bạn đã được hoàn tiền.` },
+  };
+  const msg = STATUS_MESSAGES[newStatus];
+  if (msg && booking.user_id) {
+    notify(booking.user_id, { ...msg, type: 'booking', refId: bookingId });
   }
 
   return { bookingId, status: newStatus };
@@ -1192,6 +1209,22 @@ async function cancelBooking({ bookingId, userId, reason, evidenceUrls }) {
     throw err;
   } finally {
     client.release();
+  }
+
+  // Fire-and-forget notifications after the transaction is safely committed.
+  notify(userId, {
+    title: 'Booking đã bị hủy',
+    body:  'Booking của bạn đã được hủy thành công.',
+    type:  'booking',
+    refId: bookingId,
+  });
+  if (refundRequest) {
+    notify(userId, {
+      title: 'Yêu cầu hoàn tiền đã được tạo',
+      body:  `Yêu cầu hoàn tiền ${new Intl.NumberFormat('vi-VN').format(refundRequest.requestedAmount)} ₫ đang chờ xử lý.`,
+      type:  'payment',
+      refId: refundRequest.id,
+    });
   }
 }
 

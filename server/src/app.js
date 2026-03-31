@@ -15,6 +15,7 @@ const vouchersRouter     = require('./modules/vouchers/vouchers.router');
 const reviewsRouter      = require('./modules/reviews/reviews.router');
 const notificationsRouter = require('./modules/notifications/notifications.router');
 const chatRouter         = require('./modules/chat/chat.router');
+const combosRouter       = require('./modules/combos/combos.router');
 const { errorHandler }   = require('./middleware/errorHandler');
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/vouchers',         vouchersRouter);
 app.use('/api/reviews',          reviewsRouter);
 app.use('/api/notifications',    notificationsRouter);
 app.use('/api/chat',             chatRouter);
+app.use('/api/combos',           combosRouter);
 
 // Must be registered last — catches errors forwarded via next(err)
 app.use(errorHandler);
