@@ -179,6 +179,8 @@ const PartnerServiceDetails = () => {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", description: "", city: "", address: "" });
 
   useEffect(() => {
     if (!serviceId) {
@@ -187,10 +189,35 @@ const PartnerServiceDetails = () => {
       return;
     }
     serviceService.getServiceById(serviceId)
-      .then((data) => setService(data))
+      .then((data) => {
+        setService(data);
+        setEditForm({
+          title: data.title || "",
+          description: data.description || "",
+          city: data.city || "",
+          address: data.address || "",
+        });
+      })
       .catch((err) => setError(err.message || "Không thể tải dịch vụ."))
       .finally(() => setLoading(false));
   }, [serviceId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await serviceService.updatePartnerService(serviceId, editForm);
+      setService((prev) => ({
+        ...prev,
+        ...editForm,
+        location: editForm.city || editForm.address || prev.location,
+      }));
+      setIsEditing(false);
+    } catch (err) {
+      alert(err.message || "Lưu thất bại.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading)
     return (
@@ -217,7 +244,7 @@ const PartnerServiceDetails = () => {
 
   // Derive type: use serviceType from state or from fetched service
   const svcType = service.serviceType ?? serviceType;
-  const typeInfo = SERVICE_TYPE[svcType] || SERVICE_TYPE[2];
+  const typeInfo = SERVICE_TYPE[svcType] ?? SERVICE_TYPE[2];
 
   // Extract nested data
   const tourDetails = service.tourDetails || service.tour || {};
@@ -260,21 +287,26 @@ const PartnerServiceDetails = () => {
               <>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                  disabled={saving}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
-                  onClick={() => setIsEditing(false)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" /> Lưu thay đổi
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Lưu thay đổi
                 </button>
               </>
             ) : (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                disabled={!['draft', 'rejected'].includes(service?.status)}
+                title={!['draft', 'rejected'].includes(service?.status) ? 'Chỉ có thể chỉnh sửa dịch vụ ở trạng thái draft hoặc rejected' : ''}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Pencil className="w-4 h-4" /> Chỉnh sửa
               </button>
@@ -372,15 +404,59 @@ const PartnerServiceDetails = () => {
             {/* Overview */}
             {activeTab === "overview" && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Mô tả</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {service.description || "Chưa có mô tả."}
-                  </p>
-                </div>
+                {/* Editable fields */}
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Tên dịch vụ</label>
+                      <input
+                        type="text"
+                        value={editForm.title}
+                        onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Mô tả</label>
+                      <textarea
+                        rows={4}
+                        value={editForm.description}
+                        onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Thành phố</label>
+                        <input
+                          type="text"
+                          value={editForm.city}
+                          onChange={(e) => setEditForm((f) => ({ ...f, city: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Địa chỉ</label>
+                        <input
+                          type="text"
+                          value={editForm.address}
+                          onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-2">Mô tả</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {service.description || "Chưa có mô tả."}
+                    </p>
+                  </div>
+                )}
 
                 {/* Homestay overview */}
-                {svcType === 0 && (
+                {!isEditing && svcType === 0 && (
                   <div>
                     <h3 className="font-semibold text-gray-800 mb-3">Thông tin homestay</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -394,7 +470,7 @@ const PartnerServiceDetails = () => {
                 )}
 
                 {/* Tour overview */}
-                {svcType === 1 && Object.keys(tourDetails).length > 0 && (
+                {!isEditing && svcType === 1 && Object.keys(tourDetails).length > 0 && (
                   <div>
                     <h3 className="font-semibold text-gray-800 mb-3">Thông tin tour</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
@@ -442,14 +518,6 @@ const PartnerServiceDetails = () => {
                         <p className="text-sm text-gray-700">{tourDetails.whatToBring}</p>
                       </div>
                     )}
-                  </div>
-                )}
-
-                {/* Other service overview */}
-                {svcType === 2 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <InfoItem label="Phí nền tảng" value={formatPrice(service.platformFeeAmount)} />
-                    <InfoItem label="Còn trống" value={formatNumber(service.availability)} />
                   </div>
                 )}
               </div>

@@ -739,100 +739,6 @@ const TourForm = ({
 };
 
 /* ═══════════════════════════════════════════
-   OTHER / NEWS POST FORM (single page)
-═══════════════════════════════════════════ */
-const OtherPostForm = ({
-  data,
-  update,
-  destinations,
-  onSubmit,
-  publishing,
-  publishError,
-}) => (
-  <div className="min-h-screen bg-bg-light p-6">
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => window.history.back()}
-          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bài đăng mới</h1>
-          <p className="text-gray-500 text-sm">
-            Chia sẻ sự kiện, tin tức hoặc dịch vụ đặc biệt
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
-        <FormField
-          label="Tiêu đề bài đăng *"
-          value={data.title}
-          onChange={(v) => update("title", v)}
-          placeholder="Tiêu đề hấp dẫn..."
-          required
-        />
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nội dung *
-          </label>
-          <textarea
-            value={data.description}
-            onChange={(e) => update("description", e.target.value)}
-            placeholder="Chia sẻ thông tin chi tiết về sự kiện hoặc dịch vụ của bạn..."
-            rows={8}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary resize-none"
-          />
-        </div>
-        <LocationSelect
-          label="Điểm đến"
-          value={data.destinationId}
-          onChange={(v) => update("destinationId", v)}
-          destinations={destinations}
-        />
-        <FormField
-          label="Phí nền tảng (₫)"
-          value={data.platformFeeAmount}
-          onChange={(v) => update("platformFeeAmount", v)}
-          type="number"
-          placeholder="0"
-        />
-
-        {publishError && (
-          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            {publishError}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            onClick={() => window.history.back()}
-            className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={onSubmit}
-            disabled={publishing || !data.title || !data.description}
-            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {publishing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FileText className="w-4 h-4" />
-            )}
-            {publishing ? "Đang đăng..." : "Đăng bài"}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-/* ═══════════════════════════════════════════
    CAR RENTAL STEPS
 ═══════════════════════════════════════════ */
 const CAR_RENTAL_STEPS = [
@@ -1391,15 +1297,6 @@ const PartnerServiceRegistration = () => {
         .map((item, i) => ({ ...item, stepOrder: i + 1 })),
     }));
 
-  /* --- Other state --- */
-  const [otherData, setOtherData] = useState({
-    title: "",
-    description: "",
-    destinationId: "",
-    platformFeeAmount: "0",
-  });
-  const updateOther = (f, v) => setOtherData((p) => ({ ...p, [f]: v }));
-
   /* --- Car Rental state --- */
   const blankVehicle = () => ({
     make: "",
@@ -1446,16 +1343,7 @@ const PartnerServiceRegistration = () => {
     setPublishing(true);
     setPublishError("");
     try {
-      if (serviceType === "other") {
-        await serviceService.createPartnerService({
-          destinationId: otherData.destinationId || undefined,
-          serviceType: 2,
-          title: otherData.title,
-          description: otherData.description,
-          platformFeeAmount: Number(otherData.platformFeeAmount) || 0,
-          tourDetails: null,
-        });
-      } else if (serviceType === "tour") {
+      if (serviceType === "tour") {
         const result = await serviceService.createPartnerService({
           destinationId: tourData.destinationId || undefined,
           serviceType: 1,
@@ -1629,20 +1517,6 @@ const PartnerServiceRegistration = () => {
   };
 
   if (!serviceType) return null;
-
-  // Render "other" as a standalone simple page
-  if (serviceType === "other") {
-    return (
-      <OtherPostForm
-        data={otherData}
-        update={updateOther}
-        destinations={destinations}
-        onSubmit={handlePublish}
-        publishing={publishing}
-        publishError={publishError}
-      />
-    );
-  }
 
   const steps =
     serviceType === "homestay"
