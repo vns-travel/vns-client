@@ -6,10 +6,10 @@ const MAX_IMAGES = 10;
 
 /**
  * ImageUpload — lets a partner pick up to MAX_IMAGES images, uploads each to
- * Firebase Storage immediately, and reports the final URL array via onChange.
+ * storage immediately, and reports the final URL array via onChange.
  *
  * Props:
- *   storagePath  {string}   — Firebase Storage folder, e.g. "services/tour"
+ *   storagePath  {string}   — storage folder, e.g. "services/tour"
  *   urls         {string[]} — current list of already-uploaded URLs (controlled)
  *   onChange     {(urls: string[]) => void}
  *   label        {string}   — optional section label
