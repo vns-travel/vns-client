@@ -1369,9 +1369,9 @@ const PartnerServiceRegistration = () => {
           for (const s of tourData.schedules) {
             if (!s.tourDate || !s.price) continue;
             await serviceService.addTourSchedule(tourId, {
-              tourDate: new Date(s.tourDate).toISOString(),
-              startTime: s.startTime || "08:00:00",
-              endTime: s.endTime || "17:00:00",
+              tourDate: s.tourDate,
+              startTime: s.startTime || "08:00",
+              endTime: s.endTime || "17:00",
               availableSlots: Number(s.availableSlots) || 0,
               guideId: s.guideId || undefined,
               meetingPoint: s.meetingPoint || undefined,
@@ -1406,8 +1406,8 @@ const PartnerServiceRegistration = () => {
             phoneNumber: homestayData.phoneNumber,
             openingHours: homestayData.openingHours,
           },
-          checkInTime: `${homestayData.checkInTime}:00`,
-          checkOutTime: `${homestayData.checkOutTime}:00`,
+          checkInTime: homestayData.checkInTime,
+          checkOutTime: homestayData.checkOutTime,
           cancellationPolicy: homestayData.cancellationPolicy || undefined,
           houseRules: homestayData.houseRules || undefined,
         });
@@ -1442,8 +1442,8 @@ const PartnerServiceRegistration = () => {
           roomIds.length > 0
         ) {
           await serviceService.bulkHomestayAvailability(homestayId, {
-            startDate: new Date(homestayData.availStartDate).toISOString(),
-            endDate: new Date(homestayData.availEndDate).toISOString(),
+            startDate: homestayData.availStartDate,
+            endDate: homestayData.availEndDate,
             rooms: roomIds.map((roomId) => ({
               roomId,
               defaultPrice: Number(homestayData.availDefaultPrice) || 0,

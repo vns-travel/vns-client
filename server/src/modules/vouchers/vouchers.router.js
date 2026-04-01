@@ -21,14 +21,14 @@ const createVoucherSchema = z.object({
   maxUses:     z.number().int().positive().optional(),
   validFrom:   isoDate,
   validTo:     isoDate,
-  // Restrict to known service type integers; empty array = all types.
-  applicableServiceTypes: z.array(z.enum(['0', '1', '2'])).optional(),
+  // String labels matching the frontend SCOPE_OPTIONS; empty array = all types.
+  applicableServiceTypes: z.array(z.enum(['tour', 'homestay', 'car_rental'])).optional(),
 });
 
 // Query params for manager list: search text and active/inactive filter.
 const listVouchersQuerySchema = z.object({
   search: z.string().trim().max(200).optional(),
-  status: z.enum(['active', 'inactive']).optional(),
+  status: z.enum(['active', 'inactive', 'expired']).optional(),
 });
 
 // Shared UUID param schema.

@@ -89,14 +89,35 @@ async function initiatePayment({ bookingId, userId }) {
     err.statusCode = 422; err.code = 'BOOKING_NOT_PENDING'; throw err;
   }
 
-  // Guard: reject if a successful payment already exists (idempotency)
-  const existingPaid = await pool.query(
-    `SELECT id FROM payments WHERE booking_id = $1 AND status = 'paid'`,
+  // Guard: prevent duplicate PayOS payment rows.
+  // - If a paid PayOS row exists: booking is already settled.
+  // - If a pending PayOS row exists with a checkout URL: re-use it so the user
+  //   can return to the same payment page without creating a second record.
+  // A pending row with no checkout URL (PayOS call failed last time) falls
+  // through so we retry and update that same row.
+  const existingPayos = await pool.query(
+    `SELECT id, status, gateway_response
+     FROM payments
+     WHERE booking_id = $1 AND method = 'payos'
+     ORDER BY created_at DESC
+     LIMIT 1`,
     [bookingId],
   );
-  if (existingPaid.rows.length) {
-    const err = new Error('Booking này đã được thanh toán');
-    err.statusCode = 422; err.code = 'ALREADY_PAID'; throw err;
+  if (existingPayos.rows.length) {
+    const existing = existingPayos.rows[0];
+    if (existing.status === 'paid') {
+      const err = new Error('Booking này đã được thanh toán');
+      err.statusCode = 422; err.code = 'ALREADY_PAID'; throw err;
+    }
+    if (existing.status === 'pending') {
+      const stored = existing.gateway_response ? JSON.parse(existing.gateway_response) : {};
+      if (stored.checkoutUrl) {
+        // Return the existing checkout link — idempotent re-initiation.
+        return { checkoutUrl: stored.checkoutUrl, paymentId: existing.id };
+      }
+      // No checkout URL means the PayOS call failed previously; fall through
+      // to retry, but reuse this row's id to avoid creating a duplicate.
+    }
   }
 
   // PayOS requires a unique positive integer order code (max 9007199254740991).
@@ -105,15 +126,26 @@ async function initiatePayment({ bookingId, userId }) {
 
   const amount = Math.round(Number(booking.final_amount));
 
-  // Insert the payment row before calling PayOS so we have a local record
-  // even if the redirect is never completed by the user.
-  const paymentInsert = await pool.query(
-    `INSERT INTO payments (booking_id, type, method, status, amount, gateway_tx_id)
-     VALUES ($1, 'full', 'payos', 'pending', $2, $3)
-     RETURNING id`,
-    [bookingId, amount, String(orderCode)],
-  );
-  const paymentId = paymentInsert.rows[0].id;
+  // If a previous pending row exists but has no checkout URL (failed PayOS call),
+  // reuse it rather than inserting a new one.
+  let paymentId;
+  if (existingPayos.rows.length && existingPayos.rows[0].status === 'pending') {
+    await pool.query(
+      `UPDATE payments SET gateway_tx_id = $1, gateway_response = NULL WHERE id = $2`,
+      [String(orderCode), existingPayos.rows[0].id],
+    );
+    paymentId = existingPayos.rows[0].id;
+  } else {
+    // Insert the payment row before calling PayOS so we have a local record
+    // even if the redirect is never completed by the user.
+    const paymentInsert = await pool.query(
+      `INSERT INTO payments (booking_id, type, method, status, amount, gateway_tx_id)
+       VALUES ($1, 'full', 'payos', 'pending', $2, $3)
+       RETURNING id`,
+      [bookingId, amount, String(orderCode)],
+    );
+    paymentId = paymentInsert.rows[0].id;
+  }
 
   // Call PayOS to create a hosted checkout link
   let payosResponse;
@@ -241,16 +273,29 @@ async function handlePayosWebhook(webhookBody) {
     client.release();
   }
 
-  // Fire-and-forget: notify the customer their payment succeeded and booking
-  // is now confirmed. Query user_id here (post-commit) so we never hold a
-  // connection during the notification insert.
-  pool.query(`SELECT user_id FROM bookings WHERE id = $1`, [payment.booking_id])
+  // Fire-and-forget: notify both the customer and the partner post-commit.
+  // Single query fetches all required IDs to avoid multiple round-trips.
+  pool.query(
+    `SELECT b.user_id, par.user_id AS partner_user_id
+     FROM bookings b
+     LEFT JOIN services s   ON s.id  = b.service_id
+     LEFT JOIN partners par ON par.id = s.partner_id
+     WHERE b.id = $1`,
+    [payment.booking_id],
+  )
     .then(({ rows }) => {
-      if (rows.length) {
-        notify(rows[0].user_id, {
-          title: 'Thanh toán thành công',
-          body:  'Thanh toán của bạn đã được xác nhận. Booking đã được xác nhận!',
-          type:  'payment',
+      if (!rows.length) return;
+      notify(rows[0].user_id, {
+        title: 'Thanh toán thành công',
+        body:  'Thanh toán của bạn đã được xác nhận. Booking đã được xác nhận!',
+        type:  'payment',
+        refId: payment.booking_id,
+      });
+      if (rows[0].partner_user_id) {
+        notify(rows[0].partner_user_id, {
+          title: 'Đặt chỗ đã thanh toán',
+          body:  'Một đặt chỗ của bạn đã được khách thanh toán và xác nhận.',
+          type:  'booking',
           refId: payment.booking_id,
         });
       }

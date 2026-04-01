@@ -189,8 +189,12 @@ async function checkTourAvailability({ scheduleId, participants }) {
     err.statusCode = 422; err.code = 'SCHEDULE_INACTIVE'; throw err;
   }
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  if (new Date(ts.tour_date) < today) {
+  // Compare dates in Vietnam timezone (UTC+7). Using server local time (UTC on
+  // most deployments) would reject tours that are still today in Vietnam but
+  // appear "past" for the first 7 hours of the UTC day.
+  const todayVN = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  const tourDateStr = new Date(ts.tour_date).toISOString().slice(0, 10);
+  if (tourDateStr < todayVN) {
     const err = new Error('Lịch tour đã qua');
     err.statusCode = 422; err.code = 'SCHEDULE_PAST'; throw err;
   }
@@ -672,6 +676,28 @@ async function createBooking({
     }
 
     await client.query('COMMIT');
+
+    // Fire-and-forget: notify the partner of the new booking so they can
+    // confirm or reject it. Done post-commit to avoid holding a connection
+    // during the notification insert.
+    pool.query(
+      `SELECT p.user_id
+       FROM services s
+       JOIN partners p ON p.id = s.partner_id
+       WHERE s.id = $1`,
+      [serviceId],
+    )
+      .then(({ rows }) => {
+        if (rows[0]?.user_id) {
+          notify(rows[0].user_id, {
+            title: 'Đặt chỗ mới',
+            body: 'Bạn có một đặt chỗ mới đang chờ xác nhận.',
+            type: 'booking',
+            refId: bookingId,
+          });
+        }
+      })
+      .catch((e) => console.error('[notifications] booking create partner notify failed:', e.message));
 
     return {
       bookingId,

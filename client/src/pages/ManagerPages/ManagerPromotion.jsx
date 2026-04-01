@@ -203,8 +203,7 @@ const ManagerPromotion = () => {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang hoạt động</option>
-              <option value="draft">Bản nháp</option>
-              <option value="paused">Tạm dừng</option>
+              <option value="inactive">Tạm dừng</option>
               <option value="expired">Đã hết hạn</option>
             </select>
             <select
