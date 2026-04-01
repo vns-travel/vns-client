@@ -9,24 +9,24 @@ const router = Router();
 
 const comboServiceItemSchema = z.object({
   serviceId:        z.string().uuid(),
-  quantity:         z.number().int().positive().optional(),
-  includedFeatures: z.string().optional(),
-  sequenceOrder:    z.number().int().positive().optional(),
+  quantity:         z.number().int().min(1).max(100).optional(),
+  includedFeatures: z.string().max(500).trim().optional(),
+  sequenceOrder:    z.number().int().min(1).max(100).optional(),
 });
 
 const createComboSchema = z.object({
-  title:           z.string().min(1),
-  description:     z.string().optional(),
-  originalPrice:   z.number().positive(),
-  discountedPrice: z.number().positive(),
-  maxBookings:     z.number().int().positive().optional(),
+  title:           z.string().min(1).max(200).trim(),
+  description:     z.string().max(2000).trim().optional(),
+  originalPrice:   z.number().positive().max(100_000_000),
+  discountedPrice: z.number().positive().max(100_000_000),
+  maxBookings:     z.number().int().min(1).max(100_000).optional(),
   validFrom:       z.string().datetime({ offset: true }).optional(),
   validTo:         z.string().datetime({ offset: true }).optional(),
-  services:        z.array(comboServiceItemSchema).min(1, 'Combo phải có ít nhất một dịch vụ'),
+  services:        z.array(comboServiceItemSchema).min(1, 'Combo phải có ít nhất một dịch vụ').max(20),
 });
 
 const rejectSchema = z.object({
-  reason: z.string().min(1),
+  reason: z.string().min(1).max(1000).trim(),
 });
 
 // GET /api/combos/partner

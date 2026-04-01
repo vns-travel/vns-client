@@ -1,9 +1,17 @@
 const { Router }       = require('express');
+const { z }            = require('zod');
 const { authenticate } = require('../../middleware/auth');
 const { requireRoles } = require('../../middleware/roles');
+const { validateQuery } = require('../../middleware/validate');
 const controller       = require('./refunds.controller');
 
 const router = Router();
+
+const listQuerySchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'processed']).optional(),
+  page:   z.coerce.number().int().min(1).max(1000).default(1),
+  limit:  z.coerce.number().int().min(1).max(100).default(20),
+});
 
 // IMPORTANT: literal segments (/my, /partner) must be declared before /:id
 // so Express does not capture them as the :id parameter.
@@ -13,6 +21,7 @@ router.get(
   '/my',
   authenticate,
   requireRoles('customer'),
+  validateQuery(listQuerySchema),
   controller.listMyRefunds
 );
 
@@ -22,6 +31,7 @@ router.get(
   '/partner',
   authenticate,
   requireRoles('partner'),
+  validateQuery(listQuerySchema),
   controller.listPartnerRefunds
 );
 

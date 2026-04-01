@@ -7,50 +7,53 @@ const { validate } = require('../../middleware/validate');
 
 const router = Router();
 
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const timeRegex = /^\d{2}:\d{2}$/;
+
 const createHomestaySchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
+  title: z.string().min(1).max(200).trim(),
+  description: z.string().max(5000).trim().optional(),
   location: z.object({
-    name: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    district: z.string().optional(),
-    ward: z.string().optional(),
-    postalCode: z.string().optional(),
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
-    phoneNumber: z.string().optional(),
-    openingHours: z.string().optional(),
+    name:         z.string().max(200).trim().optional(),
+    address:      z.string().max(500).trim().optional(),
+    city:         z.string().max(100).trim().optional(),
+    district:     z.string().max(100).trim().optional(),
+    ward:         z.string().max(100).trim().optional(),
+    postalCode:   z.string().max(20).trim().optional(),
+    latitude:     z.number().min(-90).max(90).optional(),
+    longitude:    z.number().min(-180).max(180).optional(),
+    phoneNumber:  z.string().max(20).trim().optional(),
+    openingHours: z.string().max(200).trim().optional(),
   }).optional(),
-  checkInTime: z.string().optional(),
-  checkOutTime: z.string().optional(),
-  cancellationPolicy: z.string().optional(),
-  houseRules: z.string().optional(),
+  checkInTime:        z.string().regex(timeRegex, 'checkInTime must be HH:MM').optional(),
+  checkOutTime:       z.string().regex(timeRegex, 'checkOutTime must be HH:MM').optional(),
+  cancellationPolicy: z.string().max(2000).trim().optional(),
+  houseRules:         z.string().max(2000).trim().optional(),
 });
 
 const addRoomSchema = z.object({
-  roomName: z.string().min(1),
-  roomDescription: z.string().optional(),
-  maxOccupancy: z.number().int().optional(),
-  roomSizeSqm: z.number().optional(),
-  bedType: z.string().optional(),
-  bedCount: z.number().int().optional(),
+  roomName:        z.string().min(1).max(100).trim(),
+  roomDescription: z.string().max(1000).trim().optional(),
+  maxOccupancy:    z.number().int().min(1).max(50).optional(),
+  roomSizeSqm:     z.number().min(0).max(10000).optional(),
+  bedType:         z.string().max(50).trim().optional(),
+  bedCount:        z.number().int().min(0).max(20).optional(),
   privateBathroom: z.boolean().optional(),
-  basePrice: z.number().positive(),
-  weekendPrice: z.number().optional(),
-  holidayPrice: z.number().optional(),
-  roomAmenities: z.array(z.string()).optional(),
-  numberOfRooms: z.number().int().optional(),
+  basePrice:       z.number().positive().max(100_000_000),
+  weekendPrice:    z.number().positive().max(100_000_000).optional(),
+  holidayPrice:    z.number().positive().max(100_000_000).optional(),
+  roomAmenities:   z.array(z.string().max(100).trim()).max(50).optional(),
+  numberOfRooms:   z.number().int().min(1).max(1000).optional(),
 });
 
 const bulkAvailabilitySchema = z.object({
-  startDate: z.string().min(1),
-  endDate: z.string().min(1),
+  startDate: z.string().regex(dateRegex, 'startDate must be YYYY-MM-DD'),
+  endDate:   z.string().regex(dateRegex, 'endDate must be YYYY-MM-DD'),
   rooms: z.array(z.object({
-    roomId: z.string().uuid(),
-    defaultPrice: z.number().optional(),
-    minNights: z.number().int().optional(),
-  })),
+    roomId:       z.string().uuid(),
+    defaultPrice: z.number().positive().max(100_000_000).optional(),
+    minNights:    z.number().int().min(1).max(365).optional(),
+  })).min(1),
   applyToAllDates: z.boolean().optional(),
 });
 

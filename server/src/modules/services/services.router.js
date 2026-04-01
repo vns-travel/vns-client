@@ -10,10 +10,10 @@ const router = Router();
 // serviceType 0=homestay, 1=tour, 2=car_rental ('other' removed)
 const createServiceSchema = z.object({
   serviceType: z.union([z.number().int().min(0).max(2), z.string().min(1)]),
-  title: z.string().min(1),
-  city: z.string().optional(),
-  address: z.string().optional(),
-  description: z.string().optional(),
+  title: z.string().min(1).max(200).trim(),
+  city: z.string().max(100).trim().optional(),
+  address: z.string().max(500).trim().optional(),
+  description: z.string().max(5000).trim().optional(),
   platformFeeAmount: z.number().optional(), // forwarded from frontend, not stored on services table
   destinationId: z.string().optional(),     // forwarded from frontend, not stored yet
   tourDetails: z.object({
@@ -22,20 +22,20 @@ const createServiceSchema = z.object({
     difficultyLevel: z.number().optional(),
     minParticipants: z.number().optional(),
     maxParticipants: z.number().optional(),
-    includes: z.array(z.string()).optional(),
-    excludes: z.array(z.string()).optional(),
-    whatToBring: z.string().optional(),
-    cancellationPolicy: z.string().optional(),
-    ageRestrictions: z.string().optional(),
-    fitnessRequirements: z.string().optional(),
+    includes: z.array(z.string().max(200).trim()).optional(),
+    excludes: z.array(z.string().max(200).trim()).optional(),
+    whatToBring: z.string().max(1000).trim().optional(),
+    cancellationPolicy: z.string().max(2000).trim().optional(),
+    ageRestrictions: z.string().max(500).trim().optional(),
+    fitnessRequirements: z.string().max(500).trim().optional(),
   }).optional().nullable(),
 });
 
 const updateServiceSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  city: z.string().optional(),
-  address: z.string().optional(),
+  title: z.string().min(1).max(200).trim(),
+  description: z.string().max(5000).trim().optional(),
+  city: z.string().max(100).trim().optional(),
+  address: z.string().max(500).trim().optional(),
 });
 
 // Partner lists their own services
