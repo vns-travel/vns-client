@@ -711,8 +711,14 @@ async function listMyBookings({ userId, status, page = 1, limit = 20 }) {
   const { rows } = await pool.query(
     `SELECT b.id AS booking_id, b.status, b.type,
             b.original_amount, b.discount_amount, b.final_amount,
-            b.created_at,
+            b.created_at, b.updated_at,
             s.title AS service_title, s.city AS service_city, s.type AS service_type,
+            -- First image for this service, used as the card thumbnail on mobile.
+            -- Scalar subquery returns NULL for combo bookings (no service_id).
+            (SELECT url FROM service_images
+             WHERE service_id = b.service_id
+             ORDER BY sort_order ASC, created_at ASC
+             LIMIT 1) AS cover_image,
             COUNT(*) OVER() AS total_count
      FROM bookings b
      LEFT JOIN services s ON s.id = b.service_id
@@ -733,6 +739,8 @@ async function listMyBookings({ userId, status, page = 1, limit = 20 }) {
       discountAmount: Number(r.discount_amount),
       finalAmount: Number(r.final_amount),
       createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      coverImage: r.cover_image,
       serviceTitle: r.service_title,
       serviceCity: r.service_city,
       serviceType: r.service_type,
@@ -812,12 +820,19 @@ async function getBookingDetail({ bookingId, userId, partnerId, role }) {
     detail = detRes.rows[0] || null;
   }
 
-  // Fetch payments
-  const payRes = await pool.query(
-    `SELECT id, type, method, status, amount, paid_at
-     FROM payments WHERE booking_id = $1 ORDER BY created_at ASC`,
-    [bookingId]
-  );
+  // Fetch payments and status history in parallel — neither depends on the other.
+  const [payRes, historyRes] = await Promise.all([
+    pool.query(
+      `SELECT id, type, method, status, amount, paid_at
+       FROM payments WHERE booking_id = $1 ORDER BY created_at ASC`,
+      [bookingId]
+    ),
+    pool.query(
+      `SELECT from_status, to_status, reason, changed_at
+       FROM booking_status_logs WHERE booking_id = $1 ORDER BY changed_at ASC`,
+      [bookingId]
+    ),
+  ]);
 
   return {
     bookingId: booking.id,
@@ -849,6 +864,12 @@ async function getBookingDetail({ bookingId, userId, partnerId, role }) {
     voucher: booking.voucher_code
       ? { code: booking.voucher_code, discountAmount: Number(booking.voucher_discount) }
       : null,
+    statusHistory: historyRes.rows.map((h) => ({
+      fromStatus: h.from_status,
+      toStatus:   h.to_status,
+      reason:     h.reason,
+      changedAt:  h.changed_at,
+    })),
   };
 }
 
@@ -947,6 +968,13 @@ async function transitionStatus({ bookingId, newStatus, actorRole, actorPartnerI
     await client.query(
       `UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2`,
       [newStatus, bookingId]
+    );
+
+    // Record the transition so customers can see a full status timeline.
+    await client.query(
+      `INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+       VALUES ($1, $2, $3)`,
+      [bookingId, booking.status, newStatus]
     );
 
     // When a booking is refunded, mark the associated paid payment(s) as refunded
@@ -1099,6 +1127,14 @@ async function cancelBooking({ bookingId, userId, reason, evidenceUrls }) {
       err.statusCode = 409; err.code = 'ALREADY_CANCELLED';
       throw err;
     }
+
+    // Record the cancellation so customers can see it in their status timeline.
+    // changed_by = the customer who triggered the cancel; reason forwarded as-is.
+    await client.query(
+      `INSERT INTO booking_status_logs (booking_id, from_status, to_status, reason, changed_by)
+       VALUES ($1, $2, 'cancelled', $3, $4)`,
+      [bookingId, ctx.status, reason || null, userId]
+    );
 
     // ----------------------------------------------------------------
     // Step 6 — Restore inventory (reverse of createBooking decrements)
@@ -1253,13 +1289,15 @@ async function expirePendingBookings() {
   const BATCH = 100;
 
   const client = await pool.connect();
+  // Collect user IDs after the transaction so notifications never cause a rollback.
+  const notifyTargets = [];
   try {
     await client.query('BEGIN');
 
     // Lock the batch atomically; SKIP LOCKED makes this safe under multiple server instances.
     const { rows } = await client.query(
       `SELECT
-         b.id, b.voucher_id,
+         b.id, b.user_id, b.voucher_id,
          s.type                AS service_type,
          td.schedule_id,       td.participants,
          hd.room_id,           hd.check_in,    hd.check_out,
@@ -1290,7 +1328,15 @@ async function expirePendingBookings() {
         [ctx.id]
       );
 
-      // 2. Restore inventory (mirrors createBooking decrements in reverse)
+      // 2. Record the transition so the mobile status timeline stays accurate.
+      //    changed_by is NULL — NULL signals a system/cron actor (see migration 018).
+      await client.query(
+        `INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         VALUES ($1, 'pending', 'cancelled')`,
+        [ctx.id]
+      );
+
+      // 3. Restore inventory (mirrors createBooking decrements in reverse)
       if (ctx.service_type === 'tour') {
         await client.query(
           `UPDATE tour_schedules
@@ -1323,7 +1369,7 @@ async function expirePendingBookings() {
         }
       }
 
-      // 3. Release voucher so the code can be reused
+      // 4. Release voucher so the code can be reused
       if (ctx.voucher_id) {
         await client.query(
           `DELETE FROM voucher_usages WHERE booking_id = $1`,
@@ -1335,17 +1381,30 @@ async function expirePendingBookings() {
         );
       }
 
+      if (ctx.user_id) notifyTargets.push({ userId: ctx.user_id, bookingId: ctx.id });
       cancelled++;
     }
 
     await client.query('COMMIT');
-    return { cancelled };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+
+  // Fire-and-forget notifications after the transaction commits so a
+  // notification failure never rolls back the booking cancellations.
+  for (const { userId, bookingId } of notifyTargets) {
+    notify(userId, {
+      title: 'Booking đã bị hủy tự động',
+      body:  'Booking của bạn đã bị hủy do chưa thanh toán trong 24 giờ.',
+      type:  'booking',
+      refId: bookingId,
+    });
+  }
+
+  return { cancelled: notifyTargets.length };
 }
 
 /**
@@ -1360,51 +1419,92 @@ async function expirePendingBookings() {
  */
 async function startConfirmedBookings() {
   const client = await pool.connect();
+  // Collect user IDs after the transaction so notifications never cause a rollback.
+  const notifyTargets = [];
   try {
     await client.query('BEGIN');
 
+    // Each UPDATE uses a CTE so the status log is written atomically in the
+    // same statement — no chance of the log missing if the process crashes
+    // between two separate queries.
+
     // Tours: start_time defaults to midnight when not set
     const tourRes = await client.query(
-      `UPDATE bookings b
-       SET status = 'in_progress', updated_at = NOW()
-       FROM booking_tour_detail btd
-       JOIN tour_schedules ts ON ts.id = btd.schedule_id
-       WHERE btd.booking_id = b.id
-         AND b.status = 'confirmed'
-         AND (ts.tour_date + COALESCE(ts.start_time, '00:00:00'::TIME)) <= NOW()
-       RETURNING b.id`
+      `WITH updated AS (
+         UPDATE bookings b
+         SET status = 'in_progress', updated_at = NOW()
+         FROM booking_tour_detail btd
+         JOIN tour_schedules ts ON ts.id = btd.schedule_id
+         WHERE btd.booking_id = b.id
+           AND b.status = 'confirmed'
+           AND (ts.tour_date + COALESCE(ts.start_time, '00:00:00'::TIME)) <= NOW()
+         RETURNING b.id, b.user_id
+       ),
+       logs AS (
+         INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         SELECT id, 'confirmed', 'in_progress' FROM updated
+       )
+       SELECT id, user_id FROM updated`
     );
 
     // Homestays: guest has arrived on check-in day
     const homestayRes = await client.query(
-      `UPDATE bookings b
-       SET status = 'in_progress', updated_at = NOW()
-       FROM booking_homestay_detail bhd
-       WHERE bhd.booking_id = b.id
-         AND b.status = 'confirmed'
-         AND bhd.check_in <= CURRENT_DATE
-       RETURNING b.id`
+      `WITH updated AS (
+         UPDATE bookings b
+         SET status = 'in_progress', updated_at = NOW()
+         FROM booking_homestay_detail bhd
+         WHERE bhd.booking_id = b.id
+           AND b.status = 'confirmed'
+           AND bhd.check_in <= CURRENT_DATE
+         RETURNING b.id, b.user_id
+       ),
+       logs AS (
+         INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         SELECT id, 'confirmed', 'in_progress' FROM updated
+       )
+       SELECT id, user_id FROM updated`
     );
 
     // Car rentals: pickup datetime has passed
     const carRes = await client.query(
-      `UPDATE bookings b
-       SET status = 'in_progress', updated_at = NOW()
-       FROM booking_transport_detail btd
-       WHERE btd.booking_id = b.id
-         AND b.status = 'confirmed'
-         AND btd.rental_start <= NOW()
-       RETURNING b.id`
+      `WITH updated AS (
+         UPDATE bookings b
+         SET status = 'in_progress', updated_at = NOW()
+         FROM booking_transport_detail btd
+         WHERE btd.booking_id = b.id
+           AND b.status = 'confirmed'
+           AND btd.rental_start <= NOW()
+         RETURNING b.id, b.user_id
+       ),
+       logs AS (
+         INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         SELECT id, 'confirmed', 'in_progress' FROM updated
+       )
+       SELECT id, user_id FROM updated`
     );
 
+    for (const row of [...tourRes.rows, ...homestayRes.rows, ...carRes.rows]) {
+      if (row.user_id) notifyTargets.push({ userId: row.user_id, bookingId: row.id });
+    }
+
     await client.query('COMMIT');
-    return { started: tourRes.rowCount + homestayRes.rowCount + carRes.rowCount };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+
+  for (const { userId, bookingId } of notifyTargets) {
+    notify(userId, {
+      title: 'Dịch vụ đang diễn ra',
+      body:  'Dịch vụ của bạn đang trong quá trình thực hiện.',
+      type:  'booking',
+      refId: bookingId,
+    });
+  }
+
+  return { started: notifyTargets.length };
 }
 
 /**
@@ -1421,53 +1521,183 @@ async function startConfirmedBookings() {
  */
 async function completeInProgressBookings() {
   const client = await pool.connect();
+  const notifyTargets = [];
   try {
     await client.query('BEGIN');
 
     const tourRes = await client.query(
-      `UPDATE bookings b
-       SET status = 'completed', updated_at = NOW()
-       FROM booking_tour_detail btd
-       JOIN tour_schedules ts ON ts.id = btd.schedule_id
-       JOIN tours t           ON t.id  = ts.tour_id
-       WHERE btd.booking_id = b.id
-         AND b.status = 'in_progress'
-         AND COALESCE(
-               ts.tour_date + ts.end_time,
-               ts.tour_date + ts.start_time + (t.duration_hours * INTERVAL '1 hour'),
-               ts.tour_date + '23:59:59'::TIME
-             ) <= NOW()
-       RETURNING b.id`
+      `WITH updated AS (
+         UPDATE bookings b
+         SET status = 'completed', updated_at = NOW()
+         FROM booking_tour_detail btd
+         JOIN tour_schedules ts ON ts.id = btd.schedule_id
+         JOIN tours t           ON t.id  = ts.tour_id
+         WHERE btd.booking_id = b.id
+           AND b.status = 'in_progress'
+           AND COALESCE(
+                 ts.tour_date + ts.end_time,
+                 ts.tour_date + ts.start_time + (t.duration_hours * INTERVAL '1 hour'),
+                 ts.tour_date + '23:59:59'::TIME
+               ) <= NOW()
+         RETURNING b.id, b.user_id
+       ),
+       logs AS (
+         INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         SELECT id, 'in_progress', 'completed' FROM updated
+       )
+       SELECT id, user_id FROM updated`
     );
 
     const homestayRes = await client.query(
-      `UPDATE bookings b
-       SET status = 'completed', updated_at = NOW()
-       FROM booking_homestay_detail bhd
-       WHERE bhd.booking_id = b.id
-         AND b.status = 'in_progress'
-         AND bhd.check_out <= CURRENT_DATE
-       RETURNING b.id`
+      `WITH updated AS (
+         UPDATE bookings b
+         SET status = 'completed', updated_at = NOW()
+         FROM booking_homestay_detail bhd
+         WHERE bhd.booking_id = b.id
+           AND b.status = 'in_progress'
+           AND bhd.check_out <= CURRENT_DATE
+         RETURNING b.id, b.user_id
+       ),
+       logs AS (
+         INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         SELECT id, 'in_progress', 'completed' FROM updated
+       )
+       SELECT id, user_id FROM updated`
     );
 
     const carRes = await client.query(
-      `UPDATE bookings b
-       SET status = 'completed', updated_at = NOW()
-       FROM booking_transport_detail btd
-       WHERE btd.booking_id = b.id
-         AND b.status = 'in_progress'
-         AND btd.rental_end <= NOW()
-       RETURNING b.id`
+      `WITH updated AS (
+         UPDATE bookings b
+         SET status = 'completed', updated_at = NOW()
+         FROM booking_transport_detail btd
+         WHERE btd.booking_id = b.id
+           AND b.status = 'in_progress'
+           AND btd.rental_end <= NOW()
+         RETURNING b.id, b.user_id
+       ),
+       logs AS (
+         INSERT INTO booking_status_logs (booking_id, from_status, to_status)
+         SELECT id, 'in_progress', 'completed' FROM updated
+       )
+       SELECT id, user_id FROM updated`
     );
 
+    for (const row of [...tourRes.rows, ...homestayRes.rows, ...carRes.rows]) {
+      if (row.user_id) notifyTargets.push({ userId: row.user_id, bookingId: row.id });
+    }
+
     await client.query('COMMIT');
-    return { completed: tourRes.rowCount + homestayRes.rowCount + carRes.rowCount };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+
+  for (const { userId, bookingId } of notifyTargets) {
+    notify(userId, {
+      title: 'Dịch vụ hoàn thành',
+      body:  'Dịch vụ của bạn đã hoàn thành. Hãy để lại đánh giá nhé!',
+      type:  'booking',
+      refId: bookingId,
+    });
+  }
+
+  return { completed: notifyTargets.length };
+}
+
+// ---------------------------------------------------------------------------
+// Cron Job 4: Driver reminder
+// ---------------------------------------------------------------------------
+
+/**
+ * Notify the partner 2 hours before every confirmed car rental pickup.
+ *
+ * Why partner, not customer? The customer already knows their rental time.
+ * The partner needs the heads-up so they can have a driver/vehicle ready —
+ * especially for bookings where driver_included = true on the vehicle.
+ *
+ * Idempotency: driver_reminded_at IS NULL + FOR UPDATE ensures each booking
+ * is reminded exactly once even if the server restarts mid-batch.
+ */
+async function remindDrivers() {
+  const REMIND_WINDOW_HOURS = 2;
+  const BATCH = 50;
+
+  const client = await pool.connect();
+  const notifyTargets = [];
+  try {
+    await client.query('BEGIN');
+
+    // Find confirmed car rentals whose pickup is within the reminder window
+    // and haven't been reminded yet. FOR UPDATE SKIP LOCKED prevents two cron
+    // instances from double-notifying the same booking.
+    const { rows } = await client.query(
+      `SELECT
+         b.id         AS booking_id,
+         btd.rental_start,
+         btd.pickup_location,
+         pp.user_id   AS partner_user_id
+       FROM bookings b
+       JOIN booking_transport_detail btd ON btd.booking_id = b.id
+       JOIN services s                   ON s.id = b.service_id
+       JOIN partner_profiles pp          ON pp.id = s.partner_id
+       WHERE b.status = 'confirmed'
+         AND btd.driver_reminded_at IS NULL
+         AND btd.rental_start > NOW()
+         AND btd.rental_start <= NOW() + ($1 * INTERVAL '1 hour')
+       ORDER BY btd.rental_start ASC
+       LIMIT $2
+       FOR UPDATE OF b SKIP LOCKED`,
+      [REMIND_WINDOW_HOURS, BATCH]
+    );
+
+    if (rows.length > 0) {
+      const bookingIds = rows.map((r) => r.booking_id);
+
+      // Mark all matched rows in one statement so the window is closed atomically.
+      await client.query(
+        `UPDATE booking_transport_detail
+         SET driver_reminded_at = NOW()
+         WHERE booking_id = ANY($1)`,
+        [bookingIds]
+      );
+
+      for (const row of rows) {
+        if (row.partner_user_id) {
+          notifyTargets.push({
+            userId:      row.partner_user_id,
+            bookingId:   row.booking_id,
+            rentalStart: row.rental_start,
+            pickup:      row.pickup_location,
+          });
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  // Fire-and-forget partner notifications after COMMIT.
+  for (const { userId, bookingId, rentalStart, pickup } of notifyTargets) {
+    const timeStr = new Date(rentalStart).toLocaleTimeString('vi-VN', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh',
+    });
+    const pickupNote = pickup ? ` tại ${pickup}` : '';
+    notify(userId, {
+      title: 'Nhắc nhở: sắp đến giờ đón khách',
+      body:  `Bạn có lịch đón khách lúc ${timeStr}${pickupNote}. Hãy chuẩn bị xe và tài xế sẵn sàng.`,
+      type:  'booking',
+      refId: bookingId,
+    });
+  }
+
+  return { reminded: notifyTargets.length };
 }
 
 module.exports = {
@@ -1480,4 +1710,5 @@ module.exports = {
   expirePendingBookings,
   startConfirmedBookings,
   completeInProgressBookings,
+  remindDrivers,
 };

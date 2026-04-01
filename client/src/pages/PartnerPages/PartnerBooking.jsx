@@ -297,27 +297,6 @@ const PartnerBooking = () => {
     },
   ]);
 
-  // Calculate enhanced stats
-  const stats = {
-    total: bookings.length,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
-    completed: bookings.filter((b) => b.status === "completed").length,
-    cancelled: bookings.filter((b) => b.status === "cancelled").length,
-    totalRevenue: bookings.reduce(
-      (sum, b) => sum + (b.status !== "cancelled" ? b.paidAmount : 0),
-      0,
-    ),
-    pendingRevenue: bookings
-      .filter((b) => b.status === "pending")
-      .reduce((sum, b) => sum + b.amount, 0),
-    thisWeek: bookings.filter((b) => {
-      const bookingDate = new Date(b.bookingDate);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return bookingDate >= weekAgo;
-    }).length,
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -462,91 +441,6 @@ const PartnerBooking = () => {
               Theo dõi và quản lý các đặt chỗ của bạn
             </p>
           </div>
-          {/* <div className="flex items-center gap-3 mt-4 md:mt-0">
-            <button className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-              <Download className="w-4 h-4 mr-2" />
-              Xuất báo cáo
-            </button>
-            <button className="flex items-center px-4 py-2 text-gray-600 hover:bg-white rounded-lg border border-transparent hover:border-gray-300">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Làm mới
-            </button>
-          </div> */}
-        </div>
-
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Revenue */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="w-5 h-5 text-green-600" />
-              </div>
-              <TrendingUp className="w-4 h-4 text-green-500" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {formatPrice(stats.totalRevenue)}
-            </div>
-            <div className="text-sm text-gray-500 mb-2">Doanh thu đã nhận</div>
-            {/* <div className="text-xs text-orange-600 font-medium">
-              +{formatPrice(stats.pendingRevenue)} đang chờ
-            </div> */}
-          </div>
-
-          {/* Total Bookings */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
-              </div>
-              {/* <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                +{stats.thisWeek} tuần này
-              </span> */}
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {stats.total}
-            </div>
-            <div className="text-sm text-gray-500 mb-2">Tổng đặt chỗ</div>
-            {/* <div className="text-xs text-gray-600">
-              {stats.completed} đã hoàn thành
-            </div> */}
-          </div>
-
-          {/* Pending Actions */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="w-5 h-5 text-yellow-600" />
-              </div>
-              <AlertCircle className="w-4 h-4 text-yellow-500" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {stats.pending}
-            </div>
-            <div className="text-sm text-gray-500 mb-2">Đang chờ xác nhận</div>
-            {/* <div className="text-xs text-yellow-600 font-medium">
-              Cần xử lý ngay
-            </div> */}
-          </div>
-
-          {/* Confirmed Bookings */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-purple-600" />
-              </div>
-              {/* <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                {stats.confirmed} sắp tới
-              </span> */}
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {stats.confirmed}
-            </div>
-            <div className="text-sm text-gray-500 mb-2">Đã xác nhận</div>
-            {/* <div className="text-xs text-gray-600">
-              {stats.cancelled} đã hủy
-            </div> */}
-          </div>
         </div>
 
         {/* Search and Filter Bar */}
@@ -579,19 +473,17 @@ const PartnerBooking = () => {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               {[
-                { id: "all", label: "Tất cả", count: stats.total },
-                { id: "pending", label: "Đang chờ", count: stats.pending },
+                { id: "all", label: "Tất cả"},
+                { id: "pending", label: "Đang chờ"},
                 {
                   id: "confirmed",
                   label: "Đã xác nhận",
-                  count: stats.confirmed,
                 },
                 {
                   id: "completed",
                   label: "Hoàn thành",
-                  count: stats.completed,
                 },
-                { id: "cancelled", label: "Đã hủy", count: stats.cancelled },
+                { id: "cancelled", label: "Đã hủy"},
               ].map((tab) => (
                 <button
                   key={tab.id}

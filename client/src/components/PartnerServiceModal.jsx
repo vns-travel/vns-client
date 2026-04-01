@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Home, Compass, FileText, Car, X } from "lucide-react";
+import { Home, Compass, Car, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const PartnerServiceModal = ({ onClose }) => {
@@ -24,12 +24,6 @@ const PartnerServiceModal = ({ onClose }) => {
       title: "Cho thuê xe",
       description: "Đăng ký đội xe cho thuê theo ngày hoặc theo giờ",
       icon: Car,
-    },
-    {
-      id: "other",
-      title: "Bài đăng / Khác",
-      description: "Đăng thông tin sự kiện, bài viết hoặc dịch vụ khác",
-      icon: FileText,
     },
   ];
 

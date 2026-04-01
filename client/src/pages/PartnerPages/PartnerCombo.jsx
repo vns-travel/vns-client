@@ -378,30 +378,6 @@ const PartnerCombo = () => {
     }
   });
 
-  const stats = {
-    totalItems: combosAndPromotions.length,
-    active: combosAndPromotions.filter((item) => item.status === "active")
-      .length,
-    totalBookings: combosAndPromotions.reduce(
-      (sum, item) => sum + item.bookings,
-      0,
-    ),
-    totalRevenue: combosAndPromotions.reduce(
-      (sum, item) => sum + item.revenue,
-      0,
-    ),
-    totalSavings: combosAndPromotions.reduce(
-      (sum, item) => sum + (item.customerSavings || 0),
-      0,
-    ),
-    avgConversion: (
-      combosAndPromotions.reduce(
-        (sum, item) => sum + (item.conversionRate || 0),
-        0,
-      ) / combosAndPromotions.filter((i) => i.conversionRate).length
-    ).toFixed(1),
-  };
-
   const copyPromoCode = (code) => {
     navigator.clipboard.writeText(code);
   };
@@ -427,87 +403,6 @@ const PartnerCombo = () => {
               <Plus className="w-4 h-4 mr-2" />
               Tạo mới
             </button>
-          </div>
-
-          {/* Enhanced Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Total Revenue */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                </div>
-                <TrendingUp className="w-4 h-4 text-green-500" />
-              </div>
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                Tổng doanh thu
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mb-2">
-                {formatPrice(stats.totalRevenue)}
-              </p>
-              {/* <p className="text-xs text-gray-500">
-              {stats.totalBookings} đặt chỗ thành công
-            </p> */}
-            </div>
-
-            {/* Customer Savings */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Gift className="w-5 h-5 text-blue-600" />
-                </div>
-                <Target className="w-4 h-4 text-blue-500" />
-              </div>
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                Tiết kiệm khách hàng
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mb-2">
-                {formatPrice(stats.totalSavings)}
-              </p>
-              {/* <p className="text-xs text-gray-500">
-              Tổng giá trị ưu đãi đã áp dụng
-            </p> */}
-            </div>
-
-            {/* Active Promotions */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Activity className="w-5 h-5 text-purple-600" />
-                </div>
-                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                  {stats.active} đang chạy
-                </span>
-              </div>
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                Chương trình
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mb-2">
-                {stats.totalItems}
-              </p>
-              {/* <p className="text-xs text-gray-500">
-              {stats.expiringNaturallySoon} sắp hết hạn trong 7 ngày
-            </p> */}
-            </div>
-
-            {/* Conversion Rate */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Zap className="w-5 h-5 text-orange-600" />
-                </div>
-                <Award className="w-4 h-4 text-orange-500" />
-              </div>
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                Tỷ lệ chuyển đổi TB
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mb-2">
-                {stats.avgConversion}%
-              </p>
-              {/* <p className="text-xs text-gray-500">
-              {stats.trending} chương trình đang trending
-            </p> */}
-            </div>
           </div>
 
           {/* Search and Filter Bar */}

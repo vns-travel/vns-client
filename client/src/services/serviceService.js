@@ -16,9 +16,9 @@ async function handleResponse(res) {
 }
 
 export const serviceService = {
-  // GET /api/partner/services — returns the authenticated partner's services
+  // GET /api/services/partner/services — returns the authenticated partner's services
   async getPartnerServices(_partnerId) {
-    const res = await fetch(`${BASE_URL}/api/partner/services`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services`, {
       headers: { ...authHeaders() },
     });
     return handleResponse(res);
@@ -39,26 +39,26 @@ export const serviceService = {
     return handleResponse(res);
   },
 
-  // GET /api/Service/{id}
+  // GET /api/services/partner/services/:id
   async getServiceById(id) {
-    const res = await fetch(`${BASE_URL}/api/Service/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services/${id}`, {
       headers: { ...authHeaders() },
     });
     return handleResponse(res);
   },
 
-  // DELETE /api/partner/services/{serviceId}
+  // DELETE /api/services/partner/services/{serviceId}
   async deleteService(serviceId) {
-    const res = await fetch(`${BASE_URL}/api/partner/services/${serviceId}`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}`, {
       method: "DELETE",
       headers: { ...authHeaders() },
     });
     return handleResponse(res);
   },
 
-  // POST /api/partner/services (Tour serviceType=1 or Other serviceType=2)
+  // POST /api/services/partner/services (Tour serviceType=1 or Car Rental serviceType=2)
   async createPartnerService(data) {
-    const res = await fetch(`${BASE_URL}/api/partner/services`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(data),
@@ -66,9 +66,9 @@ export const serviceService = {
     return handleResponse(res);
   },
 
-  // PUT /api/partner/services/{serviceId}
+  // PUT /api/services/partner/services/{serviceId}
   async updatePartnerService(serviceId, data) {
-    const res = await fetch(`${BASE_URL}/api/partner/services/${serviceId}`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(data),
@@ -144,9 +144,9 @@ export const serviceService = {
     return handleResponse(res);
   },
 
-  // POST /api/partner/services (car rental company record, status=draft)
+  // POST /api/services/partner/services (car rental service record, status=draft)
   async createService(data) {
-    const res = await fetch(`${BASE_URL}/api/partner/services`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(data),
@@ -174,9 +174,9 @@ export const serviceService = {
     return handleResponse(res);
   },
 
-  // POST /api/partner/services/:serviceId/submit (draft → pending)
+  // POST /api/services/partner/services/:serviceId/submit (draft → pending)
   async submitCarRentalService(serviceId) {
-    const res = await fetch(`${BASE_URL}/api/partner/services/${serviceId}/submit`, {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({}),
@@ -185,11 +185,11 @@ export const serviceService = {
   },
 };
 
-// ServiceType enum mapping
+// ServiceType enum mapping — 0=Homestay, 1=Tour, 2=Car Rental ('other' removed)
 export const SERVICE_TYPE = {
   0: { label: "Homestay", filterKey: "homestay", priceUnit: "/đêm" },
   1: { label: "Tour", filterKey: "tour", priceUnit: "/người" },
-  2: { label: "Khác", filterKey: "other", priceUnit: "" },
+  2: { label: "Cho thuê xe", filterKey: "car_rental", priceUnit: "/ngày" },
 };
 
 // BookingStatus mapping

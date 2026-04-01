@@ -53,13 +53,13 @@ const PartnerService = () => {
 
   // Map API serviceType (int) to UI filter key
   const getFilterKey = (serviceType) =>
-    SERVICE_TYPE[serviceType]?.filterKey || "other";
+    SERVICE_TYPE[serviceType]?.filterKey || "car_rental";
 
   const filterTabs = [
     { label: "Tất cả", key: "all" },
     { label: "Homestay", key: "homestay" },
     { label: "Tour", key: "tour" },
-    { label: "Khác", key: "other" },
+    { label: "Cho thuê xe", key: "car_rental" },
   ];
 
   const filteredServices = services.filter((s) => {
@@ -88,12 +88,6 @@ const PartnerService = () => {
         return 0;
     }
   });
-
-  const stats = {
-    total: services.length,
-    active: services.filter((s) => s.isActive || s.status === "active" || s.availability > 0).length,
-    pending: services.filter((s) => s.isPending || s.status === "pending").length,
-  };
 
   // Determine display status from API fields
   const getServiceStatus = (s) => {
@@ -150,41 +144,6 @@ const PartnerService = () => {
             <Plus className="w-5 h-5 mr-2" />
             Thêm dịch vụ mới
           </button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {stats.active}/{stats.total}
-            </div>
-            <div className="text-sm text-gray-500">Dịch vụ hoạt động</div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="w-5 h-5 text-yellow-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{stats.pending}</div>
-            <div className="text-sm text-gray-500">Chờ phê duyệt</div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{stats.total}</div>
-            <div className="text-sm text-gray-500">Tổng dịch vụ</div>
-          </div>
         </div>
 
         {/* Search & Sort Bar */}
@@ -294,7 +253,7 @@ const PartnerService = () => {
               const status = getServiceStatus(service);
               const badge = getStatusBadge(status);
               const StatusIcon = badge.icon;
-              const typeInfo = SERVICE_TYPE[service.serviceType] || SERVICE_TYPE[2];
+              const typeInfo = SERVICE_TYPE[service.serviceType] ?? SERVICE_TYPE[2];
               const images = service.images || service.serviceImages || [];
               const coverImage = images[0]?.url || images[0] || null;
               const rating = service.averageRating || service.rating;

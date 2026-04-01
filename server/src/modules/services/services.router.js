@@ -7,6 +7,7 @@ const { validate } = require('../../middleware/validate');
 
 const router = Router();
 
+// serviceType 0=homestay, 1=tour, 2=car_rental ('other' removed)
 const createServiceSchema = z.object({
   serviceType: z.union([z.number().int().min(0).max(2), z.string().min(1)]),
   title: z.string().min(1),
@@ -30,6 +31,13 @@ const createServiceSchema = z.object({
   }).optional().nullable(),
 });
 
+const updateServiceSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  city: z.string().optional(),
+  address: z.string().optional(),
+});
+
 // Partner lists their own services
 router.get(
   '/partner/services',
@@ -38,7 +46,15 @@ router.get(
   controller.listPartnerServices
 );
 
-// Partner creates a service record (tour / car_rental / other)
+// Partner fetches a single service (must be their own)
+router.get(
+  '/partner/services/:serviceId',
+  authenticate,
+  requireRoles('partner'),
+  controller.getServiceById
+);
+
+// Partner creates a service record (tour / homestay / car_rental)
 router.post(
   '/partner/services',
   authenticate,
@@ -53,6 +69,23 @@ router.post(
   authenticate,
   requireRoles('partner'),
   controller.submitService
+);
+
+// Partner updates a draft or rejected service
+router.put(
+  '/partner/services/:serviceId',
+  authenticate,
+  requireRoles('partner'),
+  validate(updateServiceSchema),
+  controller.updateService
+);
+
+// Partner deletes a draft service
+router.delete(
+  '/partner/services/:serviceId',
+  authenticate,
+  requireRoles('partner'),
+  controller.deleteService
 );
 
 module.exports = router;
