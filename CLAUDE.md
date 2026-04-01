@@ -49,6 +49,7 @@ Roles: Admin/Manager (web), Partner (web), User (Flutter mobile).
 - Read all affected existing files first
 - Never overwrite a function that already works — extend it
 - If a file has more than 50 lines, read it fully before editing
+- use context7
 
 ### After writing any code
 

@@ -23,7 +23,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health check — useful for Docker / load-balancer probes
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 // All domain routers are mounted under /api/<module>

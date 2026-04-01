@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { serviceService } from "../../services/serviceService";
+import ImageUpload from "../../components/ImageUpload";
 
 /* ═══════════════════════════════════════════
    SHARED COMPONENTS
@@ -276,6 +277,12 @@ const HomestayForm = ({
           onChange={(v) => update("cancellationPolicy", v)}
           placeholder="VD: Hoàn tiền 100% nếu hủy trước 48 giờ..."
         />
+        <ImageUpload
+          storagePath="services/homestay"
+          urls={data.images}
+          onChange={(urls) => update("images", urls)}
+          label="Hình ảnh homestay"
+        />
       </div>
     );
 
@@ -514,6 +521,12 @@ const TourForm = ({
           value={data.destinationId}
           onChange={(v) => update("destinationId", v)}
           destinations={destinations}
+        />
+        <ImageUpload
+          storagePath="services/tour"
+          urls={data.images}
+          onChange={(urls) => update("images", urls)}
+          label="Hình ảnh tour"
         />
       </div>
     );
@@ -811,6 +824,12 @@ const CarRentalForm = ({
           value={data.cancellationPolicy}
           onChange={(v) => update("cancellationPolicy", v)}
           placeholder="VD: Hoàn tiền 100% nếu hủy trước 24 giờ..."
+        />
+        <ImageUpload
+          storagePath="services/car-rental"
+          urls={data.images}
+          onChange={(urls) => update("images", urls)}
+          label="Hình ảnh dịch vụ"
         />
       </div>
     );
@@ -1156,6 +1175,7 @@ const PartnerServiceRegistration = () => {
     availEndDate: "",
     availDefaultPrice: "",
     availMinNights: "1",
+    images: [],
     rooms: [
       {
         roomName: "",
@@ -1222,6 +1242,7 @@ const PartnerServiceRegistration = () => {
     fitnessRequirements: "",
     cancellationPolicy: "",
     ageRestrictions: "",
+    images: [],
     schedules: [
       {
         tourDate: "",
@@ -1323,6 +1344,7 @@ const PartnerServiceRegistration = () => {
     availableFrom: "08:00",
     availableTo: "20:00",
     vehicles: [blankVehicle()],
+    images: [],
   });
   const updateCarRental = (f, v) => setCarRentalData((p) => ({ ...p, [f]: v }));
   const updateCarRentalVehicle = (idx, f, v) => {
@@ -1364,6 +1386,10 @@ const PartnerServiceRegistration = () => {
             fitnessRequirements: tourData.fitnessRequirements,
           },
         });
+        const tourServiceId = result.serviceId || result.id;
+        if (tourServiceId && tourData.images.length > 0) {
+          await serviceService.addServiceImages(tourServiceId, tourData.images);
+        }
         const tourId = result.tourId || result.id;
         if (tourId) {
           for (const s of tourData.schedules) {
@@ -1453,6 +1479,9 @@ const PartnerServiceRegistration = () => {
           });
         }
 
+        if (homestayData.images.length > 0) {
+          await serviceService.addServiceImages(homestayId, homestayData.images);
+        }
         await serviceService.submitHomestay(homestayId);
       } else if (serviceType === "car-rental") {
         if (carRentalData.vehicles.length === 0) {
@@ -1500,7 +1529,12 @@ const PartnerServiceRegistration = () => {
           }
         }
 
-        // 3. Submit for manager review
+        // 3. Save images if any were uploaded
+        if (carRentalData.images.length > 0) {
+          await serviceService.addServiceImages(serviceId, carRentalData.images);
+        }
+
+        // 4. Submit for manager review
         await serviceService.submitCarRentalService(serviceId);
       }
 

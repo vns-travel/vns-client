@@ -88,4 +88,15 @@ router.delete(
   controller.deleteService
 );
 
+// Partner saves Firebase image URLs for a service they own
+router.post(
+  '/partner/services/:serviceId/images',
+  authenticate,
+  requireRoles('partner'),
+  validate(z.object({
+    urls: z.array(z.string().url()).min(1).max(10),
+  })),
+  controller.addServiceImages
+);
+
 module.exports = router;

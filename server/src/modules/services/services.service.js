@@ -235,4 +235,47 @@ async function deleteService({ serviceId, partnerId }) {
   await pool.query(`DELETE FROM services WHERE id = $1`, [serviceId]);
 }
 
-module.exports = { createService, submitService, listPartnerServices, getServiceById, updateService, deleteService };
+/**
+ * Insert image URLs for a service owned by the given partner.
+ * Replaces any existing images (simpler UX: re-upload replaces previous set).
+ * Sort order follows the array index so the first URL is the cover image.
+ */
+async function insertServiceImages({ serviceId, partnerId, urls }) {
+  // Verify ownership before writing — controller already checks this but we
+  // enforce it here too so the service layer is safe to call from other contexts.
+  const { rows } = await pool.query(
+    `SELECT partner_id FROM services WHERE id = $1`,
+    [serviceId]
+  );
+  if (!rows.length) {
+    const err = new Error('Dịch vụ không tồn tại');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (rows[0].partner_id !== partnerId) {
+    const err = new Error('Forbidden');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Replace existing images for this service
+    await client.query(`DELETE FROM service_images WHERE service_id = $1`, [serviceId]);
+    for (let i = 0; i < urls.length; i++) {
+      await client.query(
+        `INSERT INTO service_images (service_id, url, sort_order) VALUES ($1, $2, $3)`,
+        [serviceId, urls[i], i]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { createService, submitService, listPartnerServices, getServiceById, updateService, deleteService, insertServiceImages };

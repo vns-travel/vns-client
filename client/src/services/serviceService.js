@@ -174,6 +174,16 @@ export const serviceService = {
     return handleResponse(res);
   },
 
+  // POST /api/services/partner/services/:serviceId/images
+  async addServiceImages(serviceId, urls) {
+    const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}/images`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ urls }),
+    });
+    return handleResponse(res);
+  },
+
   // POST /api/services/partner/services/:serviceId/submit (draft → pending)
   async submitCarRentalService(serviceId) {
     const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}/submit`, {

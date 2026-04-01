@@ -1,5 +1,18 @@
 const service = require('./services.service');
 
+async function addServiceImages(req, res, next) {
+  try {
+    await service.insertServiceImages({
+      serviceId: req.params.serviceId,
+      partnerId: req.user.partnerId,
+      urls: req.body.urls,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createService(req, res, next) {
   try {
     const data = await service.createService({
@@ -80,4 +93,4 @@ async function deleteService(req, res, next) {
   }
 }
 
-module.exports = { createService, submitService, listPartnerServices, getServiceById, updateService, deleteService };
+module.exports = { createService, submitService, listPartnerServices, getServiceById, updateService, deleteService, addServiceImages };
