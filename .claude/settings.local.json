@@ -60,7 +60,8 @@
       "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"partner@test.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Partner@123\"\"\"\",\"\"\"\"fullName\"\"\"\":\"\"\"\"Test Partner\"\"\"\"}')",
       "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"\"\"\"email\"\"\"\":\"\"\"\"partner@test.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Partner@123\"\"\"\",\"\"\"\"fullName\"\"\"\":\"\"\"\"Test Partner\"\"\"\"}')",
       "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"partner@test.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Partner@123\"\"\"\"}')",
-      "Bash(NODE_PATH=/d/Bleh/vns-client/server/node_modules node -e \":*)"
+      "Bash(NODE_PATH=/d/Bleh/vns-client/server/node_modules node -e \":*)",
+      "Bash(gcloud --version)"
     ]
   }
 }
