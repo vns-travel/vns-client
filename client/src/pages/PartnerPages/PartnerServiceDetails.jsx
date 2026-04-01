@@ -414,12 +414,18 @@ const PartnerServiceDetails = () => {
                 </span>
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    service.isActive !== false
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-600"
+                    service.status === "approved" ? "bg-green-100 text-green-700" :
+                    service.status === "pending"  ? "bg-yellow-100 text-yellow-700" :
+                    service.status === "rejected" ? "bg-orange-100 text-orange-700" :
+                    service.status === "draft"    ? "bg-blue-100 text-blue-700" :
+                    "bg-gray-100 text-gray-600"
                   }`}
                 >
-                  {service.isActive !== false ? "Đang hoạt động" : "Tạm ngưng"}
+                  {service.status === "approved" ? "Đang hoạt động" :
+                   service.status === "pending"  ? "Chờ duyệt" :
+                   service.status === "rejected" ? "Bị từ chối" :
+                   service.status === "draft"    ? "Bản nháp" :
+                   "Tạm ngưng"}
                 </span>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">{service.title}</h1>

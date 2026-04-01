@@ -21,11 +21,13 @@ const router = Router();
 
 const registerSchema = z.object({
   // Normalise email to lowercase so duplicates can't sneak in via casing.
-  email:    z.string().email().trim().toLowerCase(),
+  email:        z.string().email().trim().toLowerCase(),
   // max(128): bcrypt processes only the first 72 bytes of a password; a multi-MB
   // string still forces hashing work, creating a DoS vector.
-  password: z.string().min(6).max(128),
-  fullName: z.string().trim().max(100).optional(),
+  password:     z.string().min(6).max(128),
+  fullName:     z.string().trim().max(100).optional(),
+  phoneNumber:  z.string().trim().max(20).optional(),
+  businessName: z.string().trim().max(200).optional(),
 });
 
 const loginSchema = z.object({

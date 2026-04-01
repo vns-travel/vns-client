@@ -4,10 +4,11 @@ import { Lock, User, Building, Shield } from "lucide-react";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 
+// Keys match the lowercase role values returned by the backend JWT.
 const ROLE_ROUTES = {
-  Partner: "/PartnerDashboard",
-  Manager: "/ManagerDashboard",
-  SuperAdmin: "/AdminDashboard",
+  partner:     "/PartnerDashboard",
+  manager:     "/ManagerDashboard",
+  super_admin: "/AdminDashboard",
 };
 
 const LoginPartner = () => {
@@ -39,8 +40,8 @@ const LoginPartner = () => {
       const data = await authService.login(form.email, form.password);
       login(data);
 
-      const role = data.role || data.Role || data.userRole;
-      const route = ROLE_ROUTES[role] || ROLE_ROUTES["Partner"];
+      const role = data.role;
+      const route = ROLE_ROUTES[role] ?? "/PartnerDashboard";
       navigate(route);
     } catch (err) {
       setError(err.message || "Thông tin đăng nhập không hợp lệ hoặc lỗi máy chủ.");

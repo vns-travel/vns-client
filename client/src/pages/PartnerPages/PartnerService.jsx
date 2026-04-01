@@ -89,18 +89,23 @@ const PartnerService = () => {
     }
   });
 
-  // Determine display status from API fields
+  // Map the DB status string to a display key; backend returns 'draft'|'pending'|'approved'|'rejected'
   const getServiceStatus = (s) => {
-    if (s.isPending || s.status === "pending") return "pending";
+    const st = s.status;
+    if (st === "pending" || s.isPending) return "pending";
+    if (st === "draft") return "draft";
+    if (st === "rejected") return "rejected";
     if (s.isActive === false || s.availability === 0) return "inactive";
     return "active";
   };
 
   const getStatusBadge = (status) => ({
-    active: { cls: "bg-green-100 text-green-800", icon: CheckCircle, text: "Đang hoạt động" },
-    inactive: { cls: "bg-red-100 text-red-800", icon: XCircle, text: "Không hoạt động" },
-    pending: { cls: "bg-yellow-100 text-yellow-800", icon: Clock, text: "Chờ duyệt" },
-    paused: { cls: "bg-gray-100 text-gray-800", icon: PauseCircle, text: "Tạm dừng" },
+    active:   { cls: "bg-green-100 text-green-800",  icon: CheckCircle,  text: "Đang hoạt động" },
+    inactive: { cls: "bg-red-100 text-red-800",      icon: XCircle,      text: "Không hoạt động" },
+    pending:  { cls: "bg-yellow-100 text-yellow-800", icon: Clock,       text: "Chờ duyệt" },
+    paused:   { cls: "bg-gray-100 text-gray-800",    icon: PauseCircle,  text: "Tạm dừng" },
+    draft:    { cls: "bg-blue-100 text-blue-800",    icon: Edit2,        text: "Bản nháp" },
+    rejected: { cls: "bg-orange-100 text-orange-800", icon: AlertCircle, text: "Bị từ chối" },
   }[status] || { cls: "bg-gray-100 text-gray-800", icon: PauseCircle, text: "N/A" });
 
   const formatPrice = (price) =>

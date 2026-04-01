@@ -22,10 +22,10 @@ async function addSchedule({ partnerId, tourId, tourDate, startTime, endTime, av
   }
 
   const res = await pool.query(
-    `INSERT INTO tour_schedules (tour_id, tour_date, start_time, end_time, available_slots, price, is_active)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO tour_schedules (tour_id, tour_date, start_time, end_time, available_slots, price, guide_id, is_active)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
-    [tourId, tourDate, startTime || null, endTime || null, availableSlots, price, isActive ?? true]
+    [tourId, tourDate, startTime || null, endTime || null, availableSlots, price, guideId || null, isActive ?? true]
   );
   return { scheduleId: res.rows[0].id };
 }

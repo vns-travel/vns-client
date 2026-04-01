@@ -2,7 +2,7 @@
 // Initialised once at startup using validated env vars.
 // Import this wherever the PayOS SDK is needed.
 
-const PayOS = require('@payos/node');
+const { PayOS } = require('@payos/node');
 const env = require('./env');
 
 const payos = new PayOS(

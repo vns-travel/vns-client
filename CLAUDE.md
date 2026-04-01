@@ -42,6 +42,29 @@ Roles: Admin/Manager (web), Partner (web), User (Flutter mobile).
   /migrations               → SQL migration files (run in order)
 ```
 
+## Code Generation Rules
+
+### Before writing any code
+
+- Read all affected existing files first
+- Never overwrite a function that already works — extend it
+- If a file has more than 50 lines, read it fully before editing
+
+### After writing any code
+
+- Run the server: `cd src/server && npm run dev` — must start without errors
+- Run lint: `npm run lint` — must pass with 0 errors
+- Test the affected endpoint manually before finishing
+
+### Never do these
+
+- Never delete existing working routes
+- Never change response shapes that already work
+- Never rename exported functions without finding all usages first
+- Never add a new dependency without checking if one already exists
+
+...
+
 ## Tech Stack
 
 - Frontend: React, Vite, Tailwind CSS

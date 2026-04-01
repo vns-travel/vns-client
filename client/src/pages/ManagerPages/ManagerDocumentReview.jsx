@@ -1,156 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   RefreshCw,
   CheckCircle,
   XCircle,
-  Eye,
   Clock,
-  FileText,
-  Download,
   Building,
   User,
 } from "lucide-react";
 
-const documents = [
-  {
-    id: "DOC-001",
-    partner: "Saigon Street Food Tour",
-    partnerId: "P001",
-    email: "contact@saigonfood.vn",
-    phone: "+84 901 234 567",
-    submitted: "15/05/2026",
-    status: "pending",
-    type: "new_partner",
-    docs: [
-      {
-        name: "Giấy phép kinh doanh",
-        file: "business_license.pdf",
-        size: "1.2 MB",
-        verified: false,
-      },
-      {
-        name: "CMND/CCCD chủ sở hữu",
-        file: "id_card.pdf",
-        size: "0.8 MB",
-        verified: false,
-      },
-      {
-        name: "Giấy phép lữ hành",
-        file: "travel_license.pdf",
-        size: "1.5 MB",
-        verified: false,
-      },
-    ],
-    notes: "",
-  },
-  {
-    id: "DOC-002",
-    partner: "Halong Bay Cruise",
-    partnerId: "P002",
-    email: "info@halongcruise.com",
-    phone: "+84 912 345 678",
-    submitted: "14/05/2026",
-    status: "pending",
-    type: "new_partner",
-    docs: [
-      {
-        name: "Giấy phép kinh doanh",
-        file: "business_license.pdf",
-        size: "2.1 MB",
-        verified: true,
-      },
-      {
-        name: "CMND/CCCD chủ sở hữu",
-        file: "id_card.pdf",
-        size: "0.6 MB",
-        verified: false,
-      },
-      {
-        name: "Chứng nhận đăng ký tàu",
-        file: "boat_cert.pdf",
-        size: "1.9 MB",
-        verified: false,
-      },
-    ],
-    notes: "",
-  },
-  {
-    id: "DOC-003",
-    partner: "Hoi An Photography",
-    partnerId: "P003",
-    email: "hello@hoianphoto.com",
-    phone: "+84 935 678 901",
-    submitted: "14/05/2026",
-    status: "pending",
-    type: "update",
-    docs: [
-      {
-        name: "Giấy phép kinh doanh (cập nhật)",
-        file: "business_license_new.pdf",
-        size: "1.4 MB",
-        verified: false,
-      },
-    ],
-    notes: "",
-  },
-  {
-    id: "DOC-004",
-    partner: "Sapa Adventure Tours",
-    partnerId: "P004",
-    email: "info@sapaadventure.vn",
-    phone: "+84 945 321 987",
-    submitted: "10/05/2026",
-    status: "approved",
-    type: "new_partner",
-    docs: [
-      {
-        name: "Giấy phép kinh doanh",
-        file: "business_license.pdf",
-        size: "1.1 MB",
-        verified: true,
-      },
-      {
-        name: "CMND/CCCD chủ sở hữu",
-        file: "id_card.pdf",
-        size: "0.7 MB",
-        verified: true,
-      },
-      {
-        name: "Giấy phép lữ hành",
-        file: "travel_license.pdf",
-        size: "1.3 MB",
-        verified: true,
-      },
-    ],
-    notes: "Hồ sơ đầy đủ, hợp lệ.",
-  },
-  {
-    id: "DOC-005",
-    partner: "Nha Trang Dive Club",
-    partnerId: "P005",
-    email: "dive@nhatrangdive.com",
-    phone: "+84 912 888 777",
-    submitted: "08/05/2026",
-    status: "rejected",
-    type: "new_partner",
-    docs: [
-      {
-        name: "Giấy phép kinh doanh",
-        file: "business_license.pdf",
-        size: "0.9 MB",
-        verified: false,
-      },
-      {
-        name: "CMND/CCCD chủ sở hữu",
-        file: "id_card.pdf",
-        size: "0.5 MB",
-        verified: false,
-      },
-    ],
-    notes: "Thiếu giấy phép hoạt động lặn biển. Yêu cầu bổ sung.",
-  },
-];
+const BASE_URL = "http://localhost:3000";
+
+function authHeaders() {
+  const token = localStorage.getItem("vns_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function handleResponse(res) {
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!res.ok) throw new Error(data.message || `Lỗi ${res.status}`);
+  return data.data !== undefined ? data.data : data;
+}
+
+// Adapts API shape to the shape the card UI expects.
+function toCardShape(p) {
+  return {
+    id:        p.partnerId,
+    partner:   p.businessName || p.fullName || p.email,
+    email:     p.email,
+    phone:     p.phone || "—",
+    submitted: p.createdAt ? new Date(p.createdAt).toLocaleDateString("vi-VN") : "—",
+    status:    p.verifyStatus,
+    type:      "new_partner",
+    docs:      [],
+    notes:     p.rejectionReason || "",
+  };
+}
 
 const statusConfig = {
   pending: {
@@ -179,49 +65,76 @@ const ManagerDocumentReview = () => {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("pending");
   const [selected, setSelected] = useState(null);
-  const [list, setList] = useState(documents);
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [notes, setNotes] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  const fetchPartners = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const qs = filterStatus !== "all" ? `?status=${filterStatus}` : "";
+      const raw = await handleResponse(
+        await fetch(`${BASE_URL}/api/partners${qs}`, { headers: authHeaders() }),
+      );
+      setList(raw.map(toCardShape));
+      // Deselect if selected item no longer in new list
+      setSelected((prev) =>
+        prev && !raw.find((r) => r.partnerId === prev.id) ? null : prev,
+      );
+    } catch (err) {
+      setLoadError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterStatus]);
+
+  useEffect(() => { fetchPartners(); }, [fetchPartners]);
 
   const filtered = list.filter((d) => {
     const matchSearch =
       d.partner.toLowerCase().includes(search.toLowerCase()) ||
-      d.id.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "all" || d.status === filterStatus;
-    return matchSearch && matchStatus;
+      d.email.toLowerCase().includes(search.toLowerCase());
+    return matchSearch;
   });
 
-  const approve = (id) => {
-    setList((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, status: "approved", notes } : d)),
-    );
-    if (selected?.id === id)
-      setSelected((d) => ({ ...d, status: "approved", notes }));
+  const approve = async (id) => {
+    setActionError("");
+    try {
+      await handleResponse(
+        await fetch(`${BASE_URL}/api/partners/${id}/approve`, {
+          method: "POST",
+          headers: authHeaders(),
+        }),
+      );
+      fetchPartners();
+      setSelected(null);
+    } catch (err) {
+      setActionError(err.message);
+    }
   };
 
-  const reject = (id, reason) => {
-    setList((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, status: "rejected", notes: reason } : d,
-      ),
-    );
-    if (selected?.id === id)
-      setSelected((d) => ({ ...d, status: "rejected", notes: reason }));
-    setShowRejectModal(false);
-    setRejectReason("");
-  };
-
-  const toggleDoc = (docIndex) => {
-    if (!selected) return;
-    const updated = {
-      ...selected,
-      docs: selected.docs.map((doc, i) =>
-        i === docIndex ? { ...doc, verified: !doc.verified } : doc,
-      ),
-    };
-    setSelected(updated);
-    setList((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+  const reject = async (id, reason) => {
+    setActionError("");
+    try {
+      await handleResponse(
+        await fetch(`${BASE_URL}/api/partners/${id}/reject`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ reason }),
+        }),
+      );
+      fetchPartners();
+      setSelected(null);
+      setShowRejectModal(false);
+      setRejectReason("");
+    } catch (err) {
+      setActionError(err.message);
+    }
   };
 
   const counts = {
@@ -298,8 +211,11 @@ const ManagerDocumentReview = () => {
             <option value="approved">Đã phê duyệt</option>
             <option value="rejected">Từ chối</option>
           </select>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <RefreshCw className="w-4 h-4 text-gray-500" />
+          <button
+            onClick={fetchPartners}
+            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
 
@@ -308,7 +224,17 @@ const ManagerDocumentReview = () => {
         >
           {/* List */}
           <div className="space-y-3">
-            {filtered.length === 0 && (
+            {loadError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                {loadError}
+              </div>
+            )}
+            {actionError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                {actionError}
+              </div>
+            )}
+            {!loading && filtered.length === 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
                 Không tìm thấy hồ sơ nào
               </div>
@@ -317,7 +243,6 @@ const ManagerDocumentReview = () => {
               const sc = statusConfig[doc.status];
               const tc = typeConfig[doc.type];
               const StatusIcon = sc.icon;
-              const verifiedCount = doc.docs.filter((d) => d.verified).length;
               return (
                 <div
                   key={doc.id}
@@ -356,10 +281,6 @@ const ManagerDocumentReview = () => {
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {doc.submitted}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
-                          {verifiedCount}/{doc.docs.length} tài liệu đã xác nhận
                         </span>
                       </div>
                     </div>
@@ -427,60 +348,11 @@ const ManagerDocumentReview = () => {
               {/* Documents checklist */}
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-3">
-                  Tài liệu đính kèm (
-                  {selected.docs.filter((d) => d.verified).length}/
-                  {selected.docs.length} đã xác nhận)
+                  Tài liệu đính kèm
                 </p>
-                <div className="space-y-2">
-                  {selected.docs.map((doc, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${doc.verified ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleDoc(i)}
-                          className="flex-shrink-0"
-                        >
-                          {doc.verified ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <div className="w-4 h-4 border-2 border-gray-300 rounded-full" />
-                          )}
-                        </button>
-                        <div>
-                          <p className="text-xs font-medium text-gray-800">
-                            {doc.name}
-                          </p>
-                          <p className="text-xs text-gray-400">{doc.size}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button className="p-1 text-gray-400 hover:text-primary rounded">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-primary rounded">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs text-gray-400 text-center">
+                  Tải lên tài liệu chưa được triển khai
                 </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase mb-2">
-                  Ghi chú
-                </label>
-                <textarea
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Thêm ghi chú về hồ sơ này..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary resize-none"
-                  disabled={selected.status !== "pending"}
-                />
               </div>
 
               {selected.status === "rejected" && selected.notes && (

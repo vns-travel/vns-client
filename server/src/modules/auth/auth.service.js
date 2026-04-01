@@ -19,7 +19,7 @@ function signToken(payload) {
  * Creates a users row (role='partner') + partner_profiles row in a transaction,
  * then returns a signed JWT alongside basic profile data.
  */
-async function register({ email, password, fullName }) {
+async function register({ email, password, fullName, phoneNumber, businessName }) {
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
   if (existing.rows.length) {
     const err = new Error('Email đã được sử dụng');
@@ -34,16 +34,16 @@ async function register({ email, password, fullName }) {
     await client.query('BEGIN');
 
     const userRes = await client.query(
-      `INSERT INTO users (email, password_hash, full_name, role)
-       VALUES ($1, $2, $3, 'partner')
+      `INSERT INTO users (email, password_hash, full_name, phone, role)
+       VALUES ($1, $2, $3, $4, 'partner')
        RETURNING id, email, full_name, role`,
-      [email, passwordHash, fullName || null]
+      [email, passwordHash, fullName || null, phoneNumber || null]
     );
     const user = userRes.rows[0];
 
     const profileRes = await client.query(
-      `INSERT INTO partner_profiles (user_id) VALUES ($1) RETURNING id`,
-      [user.id]
+      `INSERT INTO partner_profiles (user_id, business_name) VALUES ($1, $2) RETURNING id`,
+      [user.id, businessName || null]
     );
     const partnerId = profileRes.rows[0].id;
 
