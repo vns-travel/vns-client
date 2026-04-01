@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import PartnerServiceModal from "../../components/PartnerServiceModal";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { serviceService, SERVICE_TYPE } from "../../services/serviceService";
@@ -28,6 +29,8 @@ const PartnerService = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // serviceId pending deletion
+  const [deleteWarning, setDeleteWarning] = useState(null); // { title, message } for blocked cases
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -111,14 +114,49 @@ const PartnerService = () => {
   const formatPrice = (price) =>
     price != null ? new Intl.NumberFormat("vi-VN").format(price) + " ₫" : "—";
 
-  const handleDelete = async (serviceId, e) => {
+  // Warning messages for statuses where deletion is blocked.
+  // The backend enforces the same rule (only 'draft' can be deleted), so these
+  // warnings surface the reason to the user before the request even fires.
+  const DELETE_WARNINGS = {
+    pending:  {
+      title: "Đang chờ phê duyệt",
+      message: "Dịch vụ đang trong quá trình xét duyệt. Vui lòng liên hệ quản lý để từ chối dịch vụ trước khi xóa.",
+    },
+    active: {
+      title: "Dịch vụ đang hoạt động",
+      message: "Dịch vụ đang chạy và có thể có đặt chỗ đang diễn ra. Chỉ được xóa dịch vụ ở trạng thái 'nháp'.",
+    },
+    inactive: {
+      title: "Dịch vụ đã được duyệt",
+      message: "Dịch vụ đã được phê duyệt. Chỉ được xóa dịch vụ ở trạng thái 'nháp'.",
+    },
+    rejected: {
+      title: "Dịch vụ bị từ chối",
+      message: "Dịch vụ bị từ chối không thể xóa trực tiếp. Chỉ được xóa dịch vụ ở trạng thái 'nháp'.",
+    },
+  };
+
+  const handleDelete = (serviceId, e) => {
     e.stopPropagation();
-    if (!window.confirm("Bạn có chắc muốn xóa dịch vụ này?")) return;
+    const service = services.find((s) => s.serviceId === serviceId);
+    const status = getServiceStatus(service);
+    const warning = DELETE_WARNINGS[status];
+    if (warning) {
+      setDeleteWarning(warning);
+      return;
+    }
+    // Only 'draft' reaches here
+    setDeleteConfirm(serviceId);
+  };
+
+  const confirmDelete = async () => {
+    const serviceId = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       await serviceService.deleteService(serviceId);
       setServices((prev) => prev.filter((s) => s.serviceId !== serviceId));
     } catch (err) {
-      alert(err.message || "Xóa thất bại.");
+      setError(err.message || "Xóa thất bại.");
     }
   };
 
@@ -370,6 +408,22 @@ const PartnerService = () => {
       </div>
 
       {isModalOpen && <PartnerServiceModal onClose={() => setIsModalOpen(false)} />}
+
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        title="Xác nhận xóa dịch vụ"
+        message="Bạn có chắc muốn xóa dịch vụ này? Hành động này không thể hoàn tác."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteWarning !== null}
+        title={deleteWarning?.title}
+        message={deleteWarning?.message}
+        onCancel={() => setDeleteWarning(null)}
+        warningOnly
+      />
     </div>
   );
 };

@@ -16,12 +16,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import { comboService } from "../../services/comboService";
 import { serviceService } from "../../services/serviceService";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const PartnerComboCreate = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [deleteIdx, setDeleteIdx] = useState(null); // index of service item pending deletion
 
   // Partner's own services — loaded on mount for step 2 selector
   const [partnerServices, setPartnerServices] = useState([]);
@@ -282,7 +284,7 @@ const PartnerComboCreate = () => {
                   <div className="col-span-1 flex justify-center pt-2">
                     {formData.services.length > 1 && (
                       <button
-                        onClick={() => removeServiceItem(index)}
+                        onClick={() => setDeleteIdx(index)}
                         className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -538,6 +540,14 @@ const PartnerComboCreate = () => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteIdx !== null}
+        title="Xác nhận xóa dịch vụ"
+        message="Bạn có chắc muốn xóa dịch vụ này khỏi combo? Hành động này không thể hoàn tác."
+        onConfirm={() => { removeServiceItem(deleteIdx); setDeleteIdx(null); }}
+        onCancel={() => setDeleteIdx(null)}
+      />
     </div>
   );
 };

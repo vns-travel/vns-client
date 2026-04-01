@@ -20,6 +20,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { serviceService } from "../../services/serviceService";
 import ImageUpload from "../../components/ImageUpload";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 /* ═══════════════════════════════════════════
    SHARED COMPONENTS
@@ -1136,6 +1137,7 @@ const PartnerServiceRegistration = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null); // { fn, label }
   const [destinations, setDestinations] = useState([]);
 
   useEffect(() => {
@@ -1609,7 +1611,7 @@ const PartnerServiceRegistration = () => {
               update={updateHomestay}
               updateRoom={updateHomestayRoom}
               addRoom={addRoom}
-              removeRoom={removeRoom}
+              removeRoom={(idx) => setPendingDelete({ fn: () => removeRoom(idx), label: `phòng #${idx + 1}` })}
             />
           ) : serviceType === "car-rental" ? (
             <CarRentalForm
@@ -1618,7 +1620,7 @@ const PartnerServiceRegistration = () => {
               update={updateCarRental}
               updateVehicle={updateCarRentalVehicle}
               addVehicle={addCarRentalVehicle}
-              removeVehicle={removeCarRentalVehicle}
+              removeVehicle={(idx) => setPendingDelete({ fn: () => removeCarRentalVehicle(idx), label: `xe #${idx + 1}` })}
             />
           ) : (
             <TourForm
@@ -1627,10 +1629,10 @@ const PartnerServiceRegistration = () => {
               update={updateTour}
               updateSchedule={updateSchedule}
               addSchedule={addSchedule}
-              removeSchedule={removeSchedule}
+              removeSchedule={(idx) => setPendingDelete({ fn: () => removeSchedule(idx), label: `lịch trình #${idx + 1}` })}
               updateItinerary={updateItinerary}
               addItinerary={addItinerary}
-              removeItinerary={removeItinerary}
+              removeItinerary={(idx) => setPendingDelete({ fn: () => removeItinerary(idx), label: `điểm #${idx + 1}` })}
               destinations={destinations}
             />
           )}
@@ -1673,6 +1675,14 @@ const PartnerServiceRegistration = () => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Xác nhận xóa"
+        message={`Bạn có chắc muốn xóa ${pendingDelete?.label}? Hành động này không thể hoàn tác.`}
+        onConfirm={() => { pendingDelete.fn(); setPendingDelete(null); }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 };

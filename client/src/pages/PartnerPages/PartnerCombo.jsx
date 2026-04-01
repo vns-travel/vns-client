@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { comboService } from "../../services/comboService";
 import {
   Search,
@@ -1013,37 +1014,13 @@ const PartnerCombo = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteId !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
-              <Trash2 className="w-6 h-6 text-red-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-              Xác nhận xóa
-            </h3>
-            <p className="text-sm text-gray-600 text-center mb-6">
-              Bạn có chắc muốn xóa combo này không? Hành động này không thể hoàn
-              tác.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleDelete(deleteId)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
-              >
-                Xóa
-              </button>
-              <button
-                onClick={() => setDeleteId(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={deleteId !== null}
+        title="Xác nhận xóa combo"
+        message="Bạn có chắc muốn xóa combo này không? Hành động này không thể hoàn tác."
+        onConfirm={() => { handleDelete(deleteId); setDeleteId(null); }}
+        onCancel={() => setDeleteId(null)}
+      />
     </>
   );
 };

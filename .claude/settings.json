@@ -8,7 +8,8 @@
       "Bash(gsutil version:*)",
       "Bash(firebase --version)",
       "Bash(npx -y firebase-tools --version)",
-      "Bash(npx firebase-tools:*)"
+      "Bash(npx firebase-tools:*)",
+      "Bash(\"C:/Program Files/PostgreSQL/16/bin/psql.exe\" postgresql://vns:vns123@localhost:5432/vns_db -f \"d:/STUDY/vns-client/database/migrations/017_add_rejection_reason_to_combos.sql\")"
     ]
   }
 }

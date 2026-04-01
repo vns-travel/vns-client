@@ -209,10 +209,13 @@ async function updateService({ serviceId, partnerId, title, description, city, a
  * Hard-delete a service owned by the partner.
  * Only draft services may be deleted — once submitted they enter the approval
  * workflow and must be rejected before the partner can remove them.
+ *
+ * Must manually cascade child rows for homestay and tour because those FK
+ * constraints were created without ON DELETE CASCADE (vehicles already has it).
  */
 async function deleteService({ serviceId, partnerId }) {
   const { rows } = await pool.query(
-    `SELECT id, partner_id, status FROM services WHERE id = $1`,
+    `SELECT id, partner_id, status, type FROM services WHERE id = $1`,
     [serviceId]
   );
 
@@ -232,7 +235,56 @@ async function deleteService({ serviceId, partnerId }) {
     throw err;
   }
 
-  await pool.query(`DELETE FROM services WHERE id = $1`, [serviceId]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    if (rows[0].type === 'homestay') {
+      // room_availability → rooms → homestay (no ON DELETE CASCADE on these FKs)
+      await client.query(
+        `DELETE FROM room_availability
+         WHERE room_id IN (
+           SELECT r.id FROM rooms r
+           JOIN homestays h ON h.id = r.homestay_id
+           WHERE h.service_id = $1
+         )`,
+        [serviceId]
+      );
+      await client.query(
+        `DELETE FROM rooms WHERE homestay_id IN (
+           SELECT id FROM homestays WHERE service_id = $1
+         )`,
+        [serviceId]
+      );
+      await client.query(`DELETE FROM homestays WHERE service_id = $1`, [serviceId]);
+    } else if (rows[0].type === 'tour') {
+      // tour_schedules + tour_itineraries → tour (no ON DELETE CASCADE on these FKs)
+      await client.query(
+        `DELETE FROM tour_schedules WHERE tour_id IN (
+           SELECT id FROM tours WHERE service_id = $1
+         )`,
+        [serviceId]
+      );
+      await client.query(
+        `DELETE FROM tour_itineraries WHERE tour_id IN (
+           SELECT id FROM tours WHERE service_id = $1
+         )`,
+        [serviceId]
+      );
+      await client.query(`DELETE FROM tours WHERE service_id = $1`, [serviceId]);
+    }
+    // car_rental: vehicles has ON DELETE CASCADE so no manual cleanup needed
+
+    await client.query(`DELETE FROM service_images WHERE service_id = $1`, [serviceId]);
+    await client.query(`DELETE FROM services WHERE id = $1`, [serviceId]);
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**

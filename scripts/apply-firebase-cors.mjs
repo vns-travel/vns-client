@@ -36,7 +36,15 @@ const corsConfig = JSON.parse(
   readFileSync(join(__dirname, "..", "cors.json"), "utf8")
 );
 
-const BUCKET = sa.project_id + ".firebasestorage.app";
+// Read bucket name from client/.env so it always matches the Firebase project config.
+// Constructing it from project_id alone can be wrong when the bucket uses a non-default name.
+const envFile = readFileSync(join(__dirname, "..", "client", ".env"), "utf8");
+const bucketMatch = envFile.match(/^VITE_FIREBASE_STORAGE_BUCKET=(.+)$/m);
+if (!bucketMatch) {
+  console.error("❌  VITE_FIREBASE_STORAGE_BUCKET not found in client/.env");
+  process.exit(1);
+}
+const BUCKET = bucketMatch[1].trim();
 
 // ── Build a signed JWT for service account auth ────────────────────────────────
 function buildJwt(sa) {
