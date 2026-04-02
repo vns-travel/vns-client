@@ -24,6 +24,7 @@ async function addRoom(req, res, next) {
       partnerId: req.user.partnerId,
       homestayId: req.params.homestayId,
       roomName: req.body.roomName,
+      roomType: req.body.roomType,
       roomDescription: req.body.roomDescription,
       maxOccupancy: req.body.maxOccupancy,
       roomSizeSqm: req.body.roomSizeSqm,
@@ -35,6 +36,7 @@ async function addRoom(req, res, next) {
       holidayPrice: req.body.holidayPrice,
       roomAmenities: req.body.roomAmenities,
       numberOfRooms: req.body.numberOfRooms,
+      minNights: req.body.minNights,
     });
     res.status(201).json({ success: true, data });
   } catch (err) {

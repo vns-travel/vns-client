@@ -2,7 +2,7 @@
 
 Wire a frontend page to the real backend API, replacing all hardcoded mock data with live API calls.
 
-Read `CLAUDE.md` before starting.
+Read `CLAUDE.md` and `service-data-logic.md` before starting.
 
 Then read these files before writing anything:
 

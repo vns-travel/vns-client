@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Home,
   MapPin,
-  FileText,
   Bed,
   List,
   CheckCircle,
@@ -21,6 +20,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { serviceService } from "../../services/serviceService";
 import ImageUpload from "../../components/ImageUpload";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import LocationMapPicker from "../../components/LocationMapPicker";
 
 /* ═══════════════════════════════════════════
    SHARED COMPONENTS
@@ -130,35 +130,6 @@ const TagInput = ({ label, tags, onChange, placeholder }) => {
   );
 };
 
-const LocationSelect = ({ label, value, onChange, destinations }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      {label}
-    </label>
-    {destinations.length > 0 ? (
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-      >
-        <option value="">-- Chọn địa điểm --</option>
-        {destinations.map((d) => (
-          <option key={d.destinationId} value={d.destinationId}>
-            {d.name} {d.city ? `– ${d.city}` : ""}
-          </option>
-        ))}
-      </select>
-    ) : (
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Nhập Location ID (UUID)"
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
-      />
-    )}
-  </div>
-);
 
 /* ═══════════════════════════════════════════
    HOMESTAY STEPS
@@ -209,38 +180,6 @@ const HomestayForm = ({
             placeholder="+84..."
           />
           <FormField
-            label="Thành phố"
-            value={data.city}
-            onChange={(v) => update("city", v)}
-            placeholder="VD: Lào Cai"
-            required
-          />
-          <FormField
-            label="Quận / Huyện"
-            value={data.district}
-            onChange={(v) => update("district", v)}
-            placeholder="VD: Sa Pa"
-          />
-          <FormField
-            label="Phường / Xã"
-            value={data.ward}
-            onChange={(v) => update("ward", v)}
-            placeholder="VD: Sa Pa Ward"
-          />
-          <FormField
-            label="Mã bưu chính"
-            value={data.postalCode}
-            onChange={(v) => update("postalCode", v)}
-            placeholder="VD: 330000"
-          />
-          <FormField
-            label="Địa chỉ"
-            value={data.address}
-            onChange={(v) => update("address", v)}
-            placeholder="Số nhà, đường..."
-            required
-          />
-          <FormField
             label="Giờ hoạt động"
             value={data.openingHours}
             onChange={(v) => update("openingHours", v)}
@@ -259,6 +198,24 @@ const HomestayForm = ({
             type="time"
           />
         </div>
+        <LocationMapPicker
+          label="Vị trí homestay"
+          value={{
+            latitude: data.latitude,
+            longitude: data.longitude,
+            displayName: data.locationName,
+          }}
+          onChange={(loc) => {
+            update("latitude", loc.latitude);
+            update("longitude", loc.longitude);
+            update("city", loc.city);
+            update("district", loc.district);
+            update("ward", loc.ward);
+            update("address", loc.address);
+            update("postalCode", loc.postalCode);
+            update("locationName", loc.displayName);
+          }}
+        />
         <FormTextarea
           label="Mô tả"
           value={data.description}
@@ -315,11 +272,30 @@ const HomestayForm = ({
                 onChange={(v) => updateRoom(idx, "roomName", v)}
                 placeholder="VD: Phòng Deluxe"
               />
-              <FormField
+              <FormSelect
+                label="Loại phòng"
+                value={room.roomType}
+                onChange={(v) => updateRoom(idx, "roomType", v)}
+                options={[
+                  { value: "single", label: "Single (1 giường đơn)" },
+                  { value: "double", label: "Double (1 giường đôi)" },
+                  { value: "twin", label: "Twin (2 giường đơn)" },
+                  { value: "suite", label: "Suite" },
+                  { value: "dormitory", label: "Dormitory (phòng tập thể)" },
+                ]}
+              />
+              <FormSelect
                 label="Loại giường"
                 value={room.bedType}
                 onChange={(v) => updateRoom(idx, "bedType", v)}
-                placeholder="VD: Queen"
+                options={[
+                  { value: "King", label: "King" },
+                  { value: "Queen", label: "Queen" },
+                  { value: "Twin", label: "Twin" },
+                  { value: "Single", label: "Single" },
+                  { value: "Bunk", label: "Bunk (tầng)" },
+                  { value: "Sofa", label: "Sofa bed" },
+                ]}
               />
               <FormField
                 label="Số giường"
@@ -499,7 +475,6 @@ const TourForm = ({
   updateItinerary,
   addItinerary,
   removeItinerary,
-  destinations,
 }) => {
   if (step === 1)
     return (
@@ -517,11 +492,19 @@ const TourForm = ({
           placeholder="Giới thiệu ngắn về tour..."
           rows={4}
         />
-        <LocationSelect
-          label="Điểm đến *"
-          value={data.destinationId}
-          onChange={(v) => update("destinationId", v)}
-          destinations={destinations}
+        <LocationMapPicker
+          label="Điểm khởi hành / khu vực tour"
+          value={{
+            latitude: data.latitude,
+            longitude: data.longitude,
+            displayName: data.locationName,
+          }}
+          onChange={(loc) => {
+            update("latitude", loc.latitude);
+            update("longitude", loc.longitude);
+            update("city", loc.city);
+            update("locationName", loc.displayName);
+          }}
         />
         <ImageUpload
           storagePath="services/tour"
@@ -799,20 +782,22 @@ const CarRentalForm = ({
             onChange={(v) => update("phoneNumber", v)}
             placeholder="+84..."
           />
-          <FormField
-            label="Thành phố *"
-            value={data.city}
-            onChange={(v) => update("city", v)}
-            placeholder="VD: Phú Quốc"
-            required
-          />
-          <FormField
-            label="Địa chỉ"
-            value={data.address}
-            onChange={(v) => update("address", v)}
-            placeholder="Số nhà, đường..."
-          />
         </div>
+        <LocationMapPicker
+          label="Vị trí công ty / văn phòng"
+          value={{
+            latitude: data.latitude,
+            longitude: data.longitude,
+            displayName: data.locationName,
+          }}
+          onChange={(loc) => {
+            update("latitude", loc.latitude);
+            update("longitude", loc.longitude);
+            update("city", loc.city);
+            update("address", loc.address);
+            update("locationName", loc.displayName);
+          }}
+        />
         <FormTextarea
           label="Mô tả"
           value={data.description}
@@ -1138,22 +1123,10 @@ const PartnerServiceRegistration = () => {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
   const [pendingDelete, setPendingDelete] = useState(null); // { fn, label }
-  const [destinations, setDestinations] = useState([]);
 
   useEffect(() => {
     if (!serviceType) navigate("/PartnerService", { replace: true });
   }, [serviceType, navigate]);
-
-  useEffect(() => {
-    serviceService
-      .getDestinations()
-      .then((data) =>
-        setDestinations(
-          Array.isArray(data) ? data : data.items || data.data || [],
-        ),
-      )
-      .catch(() => setDestinations([]));
-  }, []);
 
   /* --- Homestay state --- */
   const [homestayData, setHomestayData] = useState({
@@ -1181,6 +1154,7 @@ const PartnerServiceRegistration = () => {
     rooms: [
       {
         roomName: "",
+        roomType: "double",
         roomDescription: "",
         bedType: "Queen",
         bedCount: 1,
@@ -1208,6 +1182,7 @@ const PartnerServiceRegistration = () => {
         ...p.rooms,
         {
           roomName: "",
+          roomType: "double",
           roomDescription: "",
           bedType: "Queen",
           bedCount: 1,
@@ -1232,7 +1207,10 @@ const PartnerServiceRegistration = () => {
   const [tourData, setTourData] = useState({
     title: "",
     description: "",
-    destinationId: "",
+    latitude: "",
+    longitude: "",
+    city: "",
+    locationName: "",
     tourType: "0",
     durationHours: "4",
     difficultyLevel: "0",
@@ -1338,6 +1316,9 @@ const PartnerServiceRegistration = () => {
     title: "",
     city: "",
     address: "",
+    latitude: "",
+    longitude: "",
+    locationName: "",
     phoneNumber: "",
     description: "",
     cancellationPolicy: "",
@@ -1364,15 +1345,51 @@ const PartnerServiceRegistration = () => {
 
   /* --- Publish --- */
   const handlePublish = async () => {
+    // Validate required fields before creating anything — an incomplete form must
+    // not trigger the draft→pending transition on the backend.
+    if (serviceType === "tour") {
+      if (!tourData.title.trim()) {
+        setPublishError("Vui lòng nhập tên tour.");
+        return;
+      }
+      const validSchedules = tourData.schedules.filter((s) => s.tourDate && s.price);
+      if (validSchedules.length === 0) {
+        setPublishError("Vui lòng thêm ít nhất một lịch khởi hành hợp lệ (ngày + giá).");
+        return;
+      }
+    } else if (serviceType === "homestay") {
+      if (!homestayData.title.trim() || !homestayData.latitude) {
+        setPublishError("Vui lòng nhập tên homestay và chọn vị trí trên bản đồ.");
+        return;
+      }
+      const validRooms = homestayData.rooms.filter((r) => r.roomName && r.basePrice);
+      if (validRooms.length === 0) {
+        setPublishError("Vui lòng thêm ít nhất một phòng hợp lệ (tên phòng + giá cơ bản).");
+        return;
+      }
+    } else if (serviceType === "car-rental") {
+      if (!carRentalData.title.trim() || !carRentalData.latitude) {
+        setPublishError("Vui lòng nhập tên công ty và chọn vị trí trên bản đồ.");
+        return;
+      }
+      const validVehicles = carRentalData.vehicles.filter((v) => v.make && v.model && v.capacity);
+      if (validVehicles.length === 0) {
+        setPublishError("Vui lòng thêm ít nhất một xe hợp lệ (hãng, dòng xe và sức chứa).");
+        return;
+      }
+    }
+
     setPublishing(true);
     setPublishError("");
     try {
       if (serviceType === "tour") {
         const result = await serviceService.createPartnerService({
-          destinationId: tourData.destinationId || undefined,
           serviceType: 1,
           title: tourData.title,
           description: tourData.description,
+          city: tourData.city || undefined,
+          latitude: tourData.latitude ? Number(tourData.latitude) : undefined,
+          longitude: tourData.longitude ? Number(tourData.longitude) : undefined,
           platformFeeAmount: 0,
           tourDetails: {
             tourType: Number(tourData.tourType),
@@ -1418,6 +1435,8 @@ const PartnerServiceRegistration = () => {
             });
           }
         }
+        // Submit tour for manager review only after all data (images, schedules, itinerary) is saved
+        await serviceService.submitCarRentalService(tourServiceId);
       } else if (serviceType === "homestay") {
         const hs = await serviceService.createHomestay({
           title: homestayData.title,
@@ -1449,9 +1468,10 @@ const PartnerServiceRegistration = () => {
           if (!room.roomName || !room.basePrice) continue;
           const rr = await serviceService.addHomestayRoom(homestayId, {
             roomName: room.roomName,
+            roomType: room.roomType || undefined,
             roomDescription: room.roomDescription,
             maxOccupancy: Number(room.maxOccupancy) || 2,
-            roomSizeSqm: Number(room.roomSizeSqm) || 0,
+            roomSizeSqm: Number(room.roomSizeSqm) || undefined,
             bedType: room.bedType,
             bedCount: Number(room.bedCount) || 1,
             privateBathroom: room.privateBathroom,
@@ -1477,7 +1497,10 @@ const PartnerServiceRegistration = () => {
             endDate: homestayData.availEndDate,
             rooms: roomIds.map((roomId) => ({
               roomId,
-              defaultPrice: Number(homestayData.availDefaultPrice) || 0,
+              // defaultPrice is optional — omit rather than send 0 (backend rejects non-positive)
+              ...(homestayData.availDefaultPrice
+                ? { defaultPrice: Number(homestayData.availDefaultPrice) }
+                : {}),
               minNights: Number(homestayData.availMinNights) || 1,
             })),
             applyToAllDates: true,
@@ -1636,7 +1659,6 @@ const PartnerServiceRegistration = () => {
               updateItinerary={updateItinerary}
               addItinerary={addItinerary}
               removeItinerary={(idx) => setPendingDelete({ fn: () => removeItinerary(idx), label: `điểm #${idx + 1}` })}
-              destinations={destinations}
             />
           )}
         </div>

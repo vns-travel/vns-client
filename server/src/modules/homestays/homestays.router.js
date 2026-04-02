@@ -33,10 +33,11 @@ const createHomestaySchema = z.object({
 
 const addRoomSchema = z.object({
   roomName:        z.string().min(1).max(100).trim(),
+  roomType:        z.enum(['single', 'double', 'twin', 'suite', 'dormitory']).optional(),
   roomDescription: z.string().max(1000).trim().optional(),
   maxOccupancy:    z.number().int().min(1).max(50).optional(),
   roomSizeSqm:     z.number().min(0).max(10000).optional(),
-  bedType:         z.string().max(50).trim().optional(),
+  bedType:         z.enum(['King', 'Queen', 'Twin', 'Single', 'Bunk', 'Sofa']).optional(),
   bedCount:        z.number().int().min(0).max(20).optional(),
   privateBathroom: z.boolean().optional(),
   basePrice:       z.number().positive().max(100_000_000),
@@ -44,6 +45,7 @@ const addRoomSchema = z.object({
   holidayPrice:    z.number().positive().max(100_000_000).optional(),
   roomAmenities:   z.array(z.string().max(100).trim()).max(50).optional(),
   numberOfRooms:   z.number().int().min(1).max(1000).optional(),
+  minNights:       z.number().int().min(1).max(365).optional(),
 });
 
 const bulkAvailabilitySchema = z.object({

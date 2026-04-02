@@ -21,8 +21,9 @@ const TYPE_INT_MAP = { homestay: 0, tour: 1, car_rental: 2 };
 async function createService({ partnerId, serviceType, title, city, address, description, tourDetails }) {
   const typeStr = resolveType(serviceType);
   const isTour = typeStr === 'tour' && tourDetails;
-  // Tours go straight to pending so the manager can review; other types need explicit submit.
-  const status = isTour ? 'pending' : 'draft';
+  // All service types start as 'draft'; an explicit submit call transitions to 'pending'.
+  // This prevents partially-created tours from appearing as pending before images/schedules are saved.
+  const status = 'draft';
 
   const client = await pool.connect();
   try {
@@ -103,9 +104,15 @@ async function submitService({ serviceId, partnerId }) {
 async function listPartnerServices(partnerId) {
   const { rows } = await pool.query(
     `SELECT s.id, s.type, s.title, s.description, s.city, s.address,
-            s.status, s.avg_rating, s.review_count, s.created_at, s.updated_at
+            s.status, s.avg_rating, s.review_count, s.created_at, s.updated_at,
+            COALESCE(
+              json_agg(si.url ORDER BY si.sort_order) FILTER (WHERE si.id IS NOT NULL),
+              '[]'
+            ) AS images
      FROM services s
+     LEFT JOIN service_images si ON si.service_id = s.id
      WHERE s.partner_id = $1
+     GROUP BY s.id
      ORDER BY COALESCE(s.updated_at, s.created_at) DESC`,
     [partnerId]
   );
@@ -123,7 +130,7 @@ async function listPartnerServices(partnerId) {
     reviewCount: r.review_count,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    images: [],
+    images: r.images,
   }));
 }
 
@@ -150,7 +157,7 @@ async function getServiceById(serviceId) {
 
   if (!rows.length) return null;
   const r = rows[0];
-  return {
+  const base = {
     serviceId: r.id,
     partnerId: r.partner_id,
     serviceType: TYPE_INT_MAP[r.type] ?? 2,
@@ -166,6 +173,68 @@ async function getServiceById(serviceId) {
     updatedAt: r.updated_at,
     images: r.images,
   };
+
+  // Fetch tour-specific details (schedules + itineraries) so the partner detail
+  // page can render the full tour overview without a second API call.
+  if (r.type === 'tour') {
+    const { rows: tourRows } = await pool.query(
+      `SELECT id, duration_hours, max_capacity, cancellation_policy FROM tours WHERE service_id = $1`,
+      [r.id]
+    );
+    if (tourRows.length) {
+      const tour = tourRows[0];
+      const { rows: scheduleRows } = await pool.query(
+        `SELECT id AS "scheduleId", tour_date AS "tourDate", start_time AS "startTime",
+                end_time AS "endTime", available_slots AS "availableSlots",
+                price, guide_id AS "guideId", is_active AS "isActive"
+         FROM tour_schedules WHERE tour_id = $1 ORDER BY tour_date, start_time`,
+        [tour.id]
+      );
+      const { rows: itineraryRows } = await pool.query(
+        `SELECT id AS "itineraryId", step_order AS "stepOrder", location, activity,
+                duration_minutes AS "durationMinutes", description
+         FROM tour_itineraries WHERE tour_id = $1 ORDER BY step_order`,
+        [tour.id]
+      );
+      base.tourDetails = {
+        tourId: tour.id,
+        durationHours: tour.duration_hours,
+        maxParticipants: tour.max_capacity,
+        cancellationPolicy: tour.cancellation_policy,
+        schedules: scheduleRows,
+        itineraries: itineraryRows,
+      };
+    }
+  }
+
+  // Fetch homestay-specific details (check-in/out times, rules, room types) so
+  // the partner detail page can render all homestay information in one request.
+  if (r.type === 'homestay') {
+    const { rows: hsRows } = await pool.query(
+      `SELECT id, check_in_time AS "checkInTime", check_out_time AS "checkOutTime",
+              cancellation_policy AS "cancellationPolicy", house_rules AS "houseRules"
+       FROM homestays WHERE service_id = $1`,
+      [r.id]
+    );
+    if (hsRows.length) {
+      const hs = hsRows[0];
+      const { rows: roomRows } = await pool.query(
+        `SELECT id AS "roomId", room_name AS "roomName", max_occupancy AS "maxOccupancy",
+                size_sqm AS "roomSizeSqm", bed_type AS "bedType", bed_count AS "bedCount",
+                base_price AS "basePrice", weekend_price AS "weekendPrice",
+                total_units AS "numberOfRooms"
+         FROM rooms WHERE homestay_id = $1 ORDER BY room_name`,
+        [hs.id]
+      );
+      base.checkInTime = hs.checkInTime;
+      base.checkOutTime = hs.checkOutTime;
+      base.cancellationPolicy = hs.cancellationPolicy;
+      base.houseRules = hs.houseRules;
+      base.rooms = roomRows;
+    }
+  }
+
+  return base;
 }
 
 /**

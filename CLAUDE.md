@@ -122,3 +122,4 @@ Prefer well-known patterns over clever ones.
 
 - @docs/booking-flows.md → Full booking logic for all 3 service types
 - @docs/business-rules.md → Validation rules, guards, edge cases
+- @docs/service-data-logic.md → Real-world data logic for all 3 service types, combos, and frontend display requirements
