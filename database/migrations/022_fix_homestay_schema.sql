@@ -12,6 +12,15 @@ ALTER TABLE rooms
   ADD COLUMN IF NOT EXISTS min_nights INT NOT NULL DEFAULT 1;
 
 -- rooms.bed_type: doc §1.1 specifies a fixed dropdown — enforce at DB level
-ALTER TABLE rooms
-  ADD CONSTRAINT IF NOT EXISTS rooms_bed_type_check
-    CHECK (bed_type IN ('King', 'Queen', 'Twin', 'Single', 'Bunk', 'Sofa'));
+-- Note: ADD CONSTRAINT IF NOT EXISTS is not valid syntax; use DO block instead
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'rooms_bed_type_check'
+  ) THEN
+    ALTER TABLE rooms
+      ADD CONSTRAINT rooms_bed_type_check
+        CHECK (bed_type IN ('King', 'Queen', 'Twin', 'Single', 'Bunk', 'Sofa'));
+  END IF;
+END
+$$;

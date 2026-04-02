@@ -211,26 +211,48 @@ async function getServiceById(serviceId) {
   // the partner detail page can render all homestay information in one request.
   if (r.type === 'homestay') {
     const { rows: hsRows } = await pool.query(
-      `SELECT id, check_in_time AS "checkInTime", check_out_time AS "checkOutTime",
-              cancellation_policy AS "cancellationPolicy", house_rules AS "houseRules"
+      `SELECT id,
+              check_in_time          AS "checkInTime",
+              check_out_time         AS "checkOutTime",
+              cancellation_policy    AS "cancellationPolicy",
+              house_rules            AS "houseRules",
+              amenities,
+              host_approval_required AS "hostApprovalRequired"
        FROM homestays WHERE service_id = $1`,
       [r.id]
     );
     if (hsRows.length) {
       const hs = hsRows[0];
+      // Fetch full room data including the columns added in migration 023:
+      // amenities, is_active, description, min_nights.
       const { rows: roomRows } = await pool.query(
-        `SELECT id AS "roomId", room_name AS "roomName", max_occupancy AS "maxOccupancy",
-                size_sqm AS "roomSizeSqm", bed_type AS "bedType", bed_count AS "bedCount",
-                base_price AS "basePrice", weekend_price AS "weekendPrice",
-                total_units AS "numberOfRooms"
+        `SELECT id               AS "roomId",
+                room_name        AS "roomName",
+                room_type        AS "roomType",
+                description,
+                max_occupancy    AS "maxOccupancy",
+                size_sqm         AS "roomSizeSqm",
+                bed_type         AS "bedType",
+                bed_count        AS "bedCount",
+                private_bathroom AS "privateBathroom",
+                base_price       AS "basePrice",
+                weekend_price    AS "weekendPrice",
+                holiday_price    AS "holidayPrice",
+                total_units      AS "totalUnits",
+                min_nights       AS "minNights",
+                amenities,
+                is_active        AS "isActive"
          FROM rooms WHERE homestay_id = $1 ORDER BY room_name`,
         [hs.id]
       );
-      base.checkInTime = hs.checkInTime;
-      base.checkOutTime = hs.checkOutTime;
-      base.cancellationPolicy = hs.cancellationPolicy;
-      base.houseRules = hs.houseRules;
-      base.rooms = roomRows;
+      base.homestayId           = hs.id;
+      base.checkInTime          = hs.checkInTime;
+      base.checkOutTime         = hs.checkOutTime;
+      base.cancellationPolicy   = hs.cancellationPolicy;
+      base.houseRules           = hs.houseRules;
+      base.amenities            = hs.amenities || [];
+      base.hostApprovalRequired = hs.hostApprovalRequired || false;
+      base.rooms                = roomRows;
     }
   }
 

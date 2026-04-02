@@ -94,4 +94,71 @@ router.post(
   controller.submitHomestay
 );
 
+// ─── Schemas for property & room management ────────────────────────────────
+
+const updateHomestaySchema = z.object({
+  checkInTime:          z.string().regex(timeRegex, 'checkInTime must be HH:MM').optional().nullable(),
+  checkOutTime:         z.string().regex(timeRegex, 'checkOutTime must be HH:MM').optional().nullable(),
+  cancellationPolicy:   z.string().max(2000).trim().optional().nullable(),
+  houseRules:           z.string().max(2000).trim().optional().nullable(),
+  amenities:            z.array(z.string().max(100).trim()).max(50).optional(),
+  hostApprovalRequired: z.boolean().optional(),
+});
+
+const updateRoomSchema = z.object({
+  roomName:        z.string().min(1).max(100).trim(),
+  roomType:        z.enum(['single', 'double', 'twin', 'suite', 'dormitory']).optional().nullable(),
+  description:     z.string().max(1000).trim().optional().nullable(),
+  maxOccupancy:    z.number().int().min(1).max(50).optional().nullable(),
+  roomSizeSqm:     z.number().min(0).max(10000).optional().nullable(),
+  bedType:         z.enum(['King', 'Queen', 'Twin', 'Single', 'Bunk', 'Sofa']).optional().nullable(),
+  bedCount:        z.number().int().min(0).max(20).optional().nullable(),
+  privateBathroom: z.boolean().optional(),
+  basePrice:       z.number().positive().max(100_000_000),
+  weekendPrice:    z.number().positive().max(100_000_000).optional().nullable(),
+  holidayPrice:    z.number().positive().max(100_000_000).optional().nullable(),
+  totalUnits:      z.number().int().min(1).max(1000).optional().nullable(),
+  minNights:       z.number().int().min(1).max(365).optional().nullable(),
+  amenities:       z.array(z.string().max(100).trim()).max(50).optional(),
+});
+
+// Partner updates property-level details (always allowed, no status restriction)
+router.put(
+  '/:homestayId',
+  authenticate,
+  requireRoles('partner'),
+  validate(updateHomestaySchema),
+  controller.updateHomestayDetails
+);
+
+// Partner updates an existing room's details
+router.put(
+  '/:homestayId/rooms/:roomId',
+  authenticate,
+  requireRoles('partner'),
+  validate(updateRoomSchema),
+  controller.updateRoom
+);
+
+// Partner toggles a room's active/deactivated state
+router.patch(
+  '/:homestayId/rooms/:roomId/deactivate',
+  authenticate,
+  requireRoles('partner'),
+  controller.toggleRoomActive
+);
+
+const addRoomImagesSchema = z.object({
+  urls: z.array(z.string().url()).min(1).max(20),
+});
+
+// Partner attaches photos to a specific room type
+router.post(
+  '/rooms/:roomId/images',
+  authenticate,
+  requireRoles('partner'),
+  validate(addRoomImagesSchema),
+  controller.addRoomImages
+);
+
 module.exports = router;

@@ -184,6 +184,47 @@ export const serviceService = {
     return handleResponse(res);
   },
 
+  // PUT /api/partner/homestays/:homestayId — update property-level details
+  // Returns { hasActiveBookings, activeBookingCount } for check-in/out time warnings.
+  async updateHomestayDetails(homestayId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // PUT /api/partner/homestays/:homestayId/rooms/:roomId — update an existing room
+  async updateRoom(homestayId, roomId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/rooms/${roomId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // PATCH /api/partner/homestays/:homestayId/rooms/:roomId/deactivate — toggle active
+  // Returns { isActive, hasPendingBookings } so UI can warn on deactivation.
+  async toggleRoomActive(homestayId, roomId) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/rooms/${roomId}/deactivate`, {
+      method: "PATCH",
+      headers: { ...authHeaders() },
+    });
+    return handleResponse(res);
+  },
+
+  // POST /api/partner/homestays/rooms/:roomId/images
+  async addRoomImages(roomId, urls) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/rooms/${roomId}/images`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ urls }),
+    });
+    return handleResponse(res);
+  },
+
   // POST /api/services/partner/services/:serviceId/submit (draft → pending)
   async submitCarRentalService(serviceId) {
     const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}/submit`, {

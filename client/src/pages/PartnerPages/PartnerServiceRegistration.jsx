@@ -141,17 +141,29 @@ const HOMESTAY_STEPS = [
   { id: 4, title: "Xác nhận & Đăng", icon: CheckCircle },
 ];
 
-const ROOM_AMENITIES = [
-  "WiFi",
+const PROPERTY_TYPES = [
+  { value: "homestay", label: "Homestay" },
+  { value: "villa", label: "Villa" },
+  { value: "guesthouse", label: "Nhà nghỉ (Guesthouse)" },
+  { value: "apartment", label: "Căn hộ (Apartment)" },
+];
+
+const PROPERTY_AMENITIES = [
+  "WiFi miễn phí",
   "Điều hòa",
   "Bếp",
-  "Tủ lạnh",
-  "TV",
-  "Máy sấy tóc",
-  "Ban công",
-  "View núi",
-  "View biển",
+  "Máy giặt",
+  "Bãi đỗ xe",
+  "Hồ bơi",
+];
+
+// Room-specific amenities only — property-wide amenities (WiFi, AC, Kitchen…) live on the property
+const ROOM_AMENITIES = [
   "Phòng tắm riêng",
+  "Ban công",
+  "Bồn tắm",
+  "View biển",
+  "TV",
 ];
 
 const HomestayForm = ({
@@ -167,23 +179,17 @@ const HomestayForm = ({
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
-            label="Tên homestay"
+            label="Tên chỗ nghỉ"
             value={data.title}
             onChange={(v) => update("title", v)}
-            placeholder="VD: Sapa Cloud Homestay"
+            placeholder="VD: Lan's Ancient Town House"
             required
           />
-          <FormField
-            label="Số điện thoại liên hệ"
-            value={data.phoneNumber}
-            onChange={(v) => update("phoneNumber", v)}
-            placeholder="+84..."
-          />
-          <FormField
-            label="Giờ hoạt động"
-            value={data.openingHours}
-            onChange={(v) => update("openingHours", v)}
-            placeholder="VD: 24/7"
+          <FormSelect
+            label="Loại chỗ nghỉ"
+            value={data.propertyType}
+            onChange={(v) => update("propertyType", v)}
+            options={PROPERTY_TYPES}
           />
           <FormField
             label="Giờ nhận phòng"
@@ -197,9 +203,23 @@ const HomestayForm = ({
             onChange={(v) => update("checkOutTime", v)}
             type="time"
           />
+          <FormField
+            label="Phí vệ sinh (₫/lượt đặt)"
+            value={data.cleaningFee}
+            onChange={(v) => update("cleaningFee", v)}
+            type="number"
+            placeholder="0"
+          />
+          <FormField
+            label="Phí dịch vụ (₫/lượt đặt)"
+            value={data.serviceFee}
+            onChange={(v) => update("serviceFee", v)}
+            type="number"
+            placeholder="0"
+          />
         </div>
         <LocationMapPicker
-          label="Vị trí homestay"
+          label="Địa chỉ đầy đủ"
           value={{
             latitude: data.latitude,
             longitude: data.longitude,
@@ -216,30 +236,69 @@ const HomestayForm = ({
             update("locationName", loc.displayName);
           }}
         />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tiện nghi chỗ nghỉ
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {PROPERTY_AMENITIES.map((a) => (
+              <label key={a} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.amenities.includes(a)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? [...data.amenities, a]
+                      : data.amenities.filter((x) => x !== a);
+                    update("amenities", next);
+                  }}
+                  className="rounded"
+                />
+                <span className="text-sm">{a}</span>
+              </label>
+            ))}
+          </div>
+        </div>
         <FormTextarea
           label="Mô tả"
           value={data.description}
           onChange={(v) => update("description", v)}
-          placeholder="Mô tả ngắn về homestay của bạn..."
+          placeholder="Mô tả ngắn về chỗ nghỉ của bạn..."
           rows={4}
         />
         <FormTextarea
           label="Nội quy"
           value={data.houseRules}
           onChange={(v) => update("houseRules", v)}
-          placeholder="Quy định hút thuốc, thú cưng, tiệc tùng..."
+          placeholder="VD: Không hút thuốc, không thú cưng, giữ yên lặng sau 22h..."
         />
         <FormTextarea
           label="Chính sách hủy"
           value={data.cancellationPolicy}
           onChange={(v) => update("cancellationPolicy", v)}
-          placeholder="VD: Hoàn tiền 100% nếu hủy trước 48 giờ..."
+          placeholder="VD: Hoàn tiền 100% trước 3 ngày, 50% trong vòng 3 ngày, không hoàn trong vòng 24h..."
         />
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div
+              onClick={() => update("hostApprovalRequired", !data.hostApprovalRequired)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${data.hostApprovalRequired ? "bg-primary" : "bg-gray-300"}`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${data.hostApprovalRequired ? "translate-x-6" : "translate-x-1"}`}
+              />
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-700">Yêu cầu chủ nhà duyệt đặt phòng</span>
+              <p className="text-xs text-gray-500">Bạn sẽ có 24h để chấp nhận hoặc từ chối mỗi đặt phòng</p>
+            </div>
+          </label>
+        </div>
         <ImageUpload
           storagePath="services/homestay"
           urls={data.images}
           onChange={(urls) => update("images", urls)}
-          label="Hình ảnh homestay"
+          label="Hình ảnh chỗ nghỉ (tối thiểu 3 ảnh)"
         />
       </div>
     );
@@ -339,21 +398,13 @@ const HomestayForm = ({
                 onChange={(v) => updateRoom(idx, "holidayPrice", v)}
                 type="number"
               />
-              <div>
-                <label className="flex items-center gap-2 mt-5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={room.privateBathroom}
-                    onChange={(e) =>
-                      updateRoom(idx, "privateBathroom", e.target.checked)
-                    }
-                    className="rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    Phòng tắm riêng
-                  </span>
-                </label>
-              </div>
+              <FormField
+                label="Số đêm tối thiểu"
+                value={room.minNights}
+                onChange={(v) => updateRoom(idx, "minNights", v)}
+                type="number"
+                placeholder="1"
+              />
             </div>
             <FormTextarea
               label="Mô tả phòng"
@@ -364,7 +415,7 @@ const HomestayForm = ({
             />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tiện nghi phòng
+                Tiện nghi riêng của phòng
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {ROOM_AMENITIES.map((a) => (
@@ -388,6 +439,12 @@ const HomestayForm = ({
                 ))}
               </div>
             </div>
+            <ImageUpload
+              storagePath="services/homestay/rooms"
+              urls={room.roomImages}
+              onChange={(urls) => updateRoom(idx, "roomImages", urls)}
+              label="Ảnh phòng"
+            />
           </div>
         ))}
         <button
@@ -403,12 +460,11 @@ const HomestayForm = ({
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">
-          Cài đặt khung thời gian có phòng. Sẽ áp dụng cho tất cả các loại
-          phòng.
+          Chọn khoảng thời gian mở đặt phòng. Bạn có thể mở từng khoảng lớn (VD: toàn bộ tháng 7) và quản lý chi tiết sau khi dịch vụ được duyệt.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
-            label="Ngày bắt đầu *"
+            label="Ngày bắt đầu mở đặt *"
             value={data.availStartDate}
             onChange={(v) => update("availStartDate", v)}
             type="date"
@@ -419,21 +475,10 @@ const HomestayForm = ({
             onChange={(v) => update("availEndDate", v)}
             type="date"
           />
-          <FormField
-            label="Giá mặc định (₫/đêm)"
-            value={data.availDefaultPrice}
-            onChange={(v) => update("availDefaultPrice", v)}
-            type="number"
-            placeholder="0"
-          />
-          <FormField
-            label="Số đêm tối thiểu"
-            value={data.availMinNights}
-            onChange={(v) => update("availMinNights", v)}
-            type="number"
-            placeholder="1"
-          />
         </div>
+        <p className="text-xs text-gray-400">
+          Giá ghi đè theo ngày, chặn phòng và điều chỉnh số đêm tối thiểu có thể thực hiện trong phần "Quản lý lịch phòng" sau khi dịch vụ được duyệt.
+        </p>
       </div>
     );
 
@@ -997,6 +1042,22 @@ const CarRentalForm = ({
 /* ═══════════════════════════════════════════
    CONFIRM PANEL
 ═══════════════════════════════════════════ */
+const SummarySection = ({ title, rows }) => (
+  <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+      <h4 className="text-sm font-semibold text-gray-700">{title}</h4>
+    </div>
+    <div className="px-4 py-3 space-y-1.5">
+      {rows.map(({ label, value }) => (
+        <div key={label} className="flex justify-between gap-4 text-sm">
+          <span className="text-gray-500 shrink-0">{label}</span>
+          <span className="text-gray-800 text-right">{value || "—"}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const ConfirmPanel = ({
   serviceType,
   homestayData,
@@ -1004,65 +1065,185 @@ const ConfirmPanel = ({
   carRentalData,
   publishError,
 }) => {
-  const summaryItems =
-    serviceType === "homestay"
-      ? [
-          { label: "Tên homestay", value: homestayData.title || "—" },
+  const fmt = (n) =>
+    n ? Number(n).toLocaleString("vi-VN") + "₫" : null;
+
+  let sections = [];
+
+  if (serviceType === "homestay") {
+    const validRooms = homestayData.rooms.filter((r) => r.roomName && r.basePrice);
+    sections = [
+      {
+        title: "Thông tin chỗ nghỉ",
+        rows: [
+          { label: "Tên", value: homestayData.title },
           {
             label: "Địa chỉ",
-            value:
-              `${homestayData.address || ""}, ${homestayData.city || ""}`
-                .trim()
-                .replace(/^,\s*/, "") || "—",
+            value: [homestayData.address, homestayData.city].filter(Boolean).join(", "),
           },
-          { label: "Số loại phòng", value: homestayData.rooms.length },
-          { label: "Nhận phòng", value: homestayData.checkInTime || "—" },
-        ]
-      : serviceType === "car-rental"
-      ? [
-          { label: "Tên công ty", value: carRentalData.title || "—" },
-          { label: "Thành phố", value: carRentalData.city || "—" },
-          { label: "Số xe trong đội", value: carRentalData.vehicles.length },
+          { label: "Loại", value: homestayData.propertyType },
           {
-            label: "Thời gian hoạt động",
+            label: "Nhận / Trả phòng",
+            value: `${homestayData.checkInTime || "—"} / ${homestayData.checkOutTime || "—"}`,
+          },
+          {
+            label: "Tiện nghi",
+            value: homestayData.amenities.length
+              ? homestayData.amenities.join(", ")
+              : null,
+          },
+          { label: "Phí vệ sinh", value: fmt(homestayData.cleaningFee) },
+          { label: "Phí dịch vụ", value: fmt(homestayData.serviceFee) },
+          {
+            label: "Duyệt đặt phòng",
+            value: homestayData.hostApprovalRequired ? "Chủ nhà duyệt thủ công" : "Tự động xác nhận",
+          },
+          {
+            label: "Ảnh đã tải",
+            value: homestayData.images.length
+              ? `${homestayData.images.length} ảnh`
+              : "Chưa có ảnh",
+          },
+        ],
+      },
+      {
+        title: `Phòng (${validRooms.length} loại)`,
+        rows: validRooms.map((r) => ({
+          label: r.roomName,
+          value: [
+            r.roomType,
+            `${r.numberOfRooms} phòng`,
+            `${r.maxOccupancy} khách`,
+            fmt(r.basePrice) + "/đêm",
+            r.minNights > 1 ? `tối thiểu ${r.minNights} đêm` : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        })),
+      },
+      {
+        title: "Lịch mở đặt phòng",
+        rows: [
+          {
+            label: "Khoảng mở",
+            value:
+              homestayData.availStartDate && homestayData.availEndDate
+                ? `${homestayData.availStartDate} → ${homestayData.availEndDate}`
+                : "Chưa đặt",
+          },
+        ],
+      },
+    ];
+  } else if (serviceType === "car-rental") {
+    const validVehicles = carRentalData.vehicles.filter((v) => v.make && v.model);
+    sections = [
+      {
+        title: "Thông tin công ty",
+        rows: [
+          { label: "Tên", value: carRentalData.title },
+          { label: "Thành phố", value: carRentalData.city },
+          { label: "Địa chỉ", value: carRentalData.address },
+          {
+            label: "Ảnh đã tải",
+            value: carRentalData.images.length
+              ? `${carRentalData.images.length} ảnh`
+              : "Chưa có ảnh",
+          },
+        ],
+      },
+      {
+        title: `Đội xe (${validVehicles.length} xe)`,
+        rows: validVehicles.map((v) => ({
+          label: `${v.make} ${v.model}`,
+          value: [
+            v.vehicleType,
+            `${v.capacity} chỗ`,
+            v.pricingModel === "daily"
+              ? fmt(v.dailyRate) + "/ngày"
+              : fmt(v.hourlyRate) + "/giờ",
+            v.driverIncluded ? "có tài xế" : "tự lái",
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        })),
+      },
+      {
+        title: "Lịch hoạt động",
+        rows: [
+          {
+            label: "Khoảng mở",
             value:
               carRentalData.availStartDate && carRentalData.availEndDate
                 ? `${carRentalData.availStartDate} → ${carRentalData.availEndDate}`
-                : "—",
+                : "Chưa đặt",
           },
-        ]
-      : [
-          { label: "Tên tour", value: tourData.title || "—" },
+        ],
+      },
+    ];
+  } else {
+    const validSchedules = tourData.schedules.filter((s) => s.tourDate && s.price);
+    const validItinerary = tourData.itinerary.filter((i) => i.location && i.activity);
+    sections = [
+      {
+        title: "Thông tin tour",
+        rows: [
+          { label: "Tên", value: tourData.title },
+          { label: "Thành phố", value: tourData.city },
+          { label: "Thời lượng", value: tourData.durationHours ? `${tourData.durationHours} giờ` : null },
           {
-            label: "Thời lượng",
-            value: tourData.durationHours
-              ? `${tourData.durationHours} giờ`
-              : "—",
+            label: "Số người",
+            value: `${tourData.minParticipants || 1} – ${tourData.maxParticipants || "?"}`,
           },
-          { label: "Số lịch trình", value: tourData.schedules.length },
-          { label: "Số điểm hành trình", value: tourData.itinerary.length },
-        ];
+          {
+            label: "Bao gồm",
+            value: tourData.includes.length ? tourData.includes.join(", ") : null,
+          },
+          {
+            label: "Ảnh đã tải",
+            value: tourData.images.length
+              ? `${tourData.images.length} ảnh`
+              : "Chưa có ảnh",
+          },
+        ],
+      },
+      {
+        title: `Lịch khởi hành (${validSchedules.length})`,
+        rows: validSchedules.map((s) => ({
+          label: s.tourDate,
+          value: [
+            s.startTime && s.endTime ? `${s.startTime}–${s.endTime}` : null,
+            s.availableSlots ? `${s.availableSlots} chỗ` : null,
+            fmt(s.price) + "/người",
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        })),
+      },
+      {
+        title: `Hành trình (${validItinerary.length} điểm)`,
+        rows: validItinerary.map((i) => ({
+          label: `${i.stepOrder}. ${i.location}`,
+          value: [i.activity, i.durationMinutes ? `${i.durationMinutes} phút` : null]
+            .filter(Boolean)
+            .join(" · "),
+        })),
+      },
+    ];
+  }
 
   return (
     <div className="space-y-4">
-      <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <CheckCircle className="w-5 h-5 text-green-600" />
-          <h3 className="font-semibold text-green-800">
-            Sẵn sàng đăng dịch vụ
-          </h3>
-        </div>
-        <div className="space-y-1.5 text-sm text-green-700">
-          {summaryItems.map((item) => (
-            <p key={item.label}>
-              <span className="font-medium">{item.label}:</span> {item.value}
-            </p>
-          ))}
-        </div>
+      <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+        <CheckCircle className="w-5 h-5 shrink-0" />
+        <span className="text-sm font-medium">
+          Xem lại thông tin trước khi gửi duyệt
+        </span>
       </div>
-      <p className="text-sm text-gray-600">
-        Sau khi đăng, dịch vụ sẽ được gửi đến quản lý để xét duyệt trước khi
-        hiển thị công khai.
+      {sections.map((s) => (
+        <SummarySection key={s.title} title={s.title} rows={s.rows} />
+      ))}
+      <p className="text-xs text-gray-400">
+        Sau khi gửi, dịch vụ sẽ được gửi đến quản lý để xét duyệt trước khi hiển thị công khai.
       </p>
       {publishError && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
@@ -1129,9 +1310,27 @@ const PartnerServiceRegistration = () => {
   }, [serviceType, navigate]);
 
   /* --- Homestay state --- */
+  const blankRoom = () => ({
+    roomName: "",
+    roomType: "double",
+    roomDescription: "",
+    bedType: "Queen",
+    bedCount: 1,
+    maxOccupancy: 2,
+    roomSizeSqm: "",
+    basePrice: "",
+    weekendPrice: "",
+    holidayPrice: "",
+    minNights: "1",
+    roomAmenities: [],
+    roomImages: [],
+    numberOfRooms: 1,
+  });
+
   const [homestayData, setHomestayData] = useState({
     title: "",
     description: "",
+    propertyType: "homestay",
     locationName: "",
     address: "",
     city: "",
@@ -1140,34 +1339,18 @@ const PartnerServiceRegistration = () => {
     postalCode: "",
     latitude: "",
     longitude: "",
-    phoneNumber: "",
-    openingHours: "24/7",
     checkInTime: "14:00",
     checkOutTime: "12:00",
     cancellationPolicy: "",
     houseRules: "",
+    amenities: [],
+    cleaningFee: "",
+    serviceFee: "",
+    hostApprovalRequired: false,
     availStartDate: "",
     availEndDate: "",
-    availDefaultPrice: "",
-    availMinNights: "1",
     images: [],
-    rooms: [
-      {
-        roomName: "",
-        roomType: "double",
-        roomDescription: "",
-        bedType: "Queen",
-        bedCount: 1,
-        maxOccupancy: 2,
-        roomSizeSqm: "",
-        privateBathroom: true,
-        basePrice: "",
-        weekendPrice: "",
-        holidayPrice: "",
-        roomAmenities: [],
-        numberOfRooms: 1,
-      },
-    ],
+    rooms: [blankRoom()],
   });
   const updateHomestay = (f, v) => setHomestayData((p) => ({ ...p, [f]: v }));
   const updateHomestayRoom = (idx, f, v) => {
@@ -1176,27 +1359,7 @@ const PartnerServiceRegistration = () => {
     setHomestayData((p) => ({ ...p, rooms: r }));
   };
   const addRoom = () =>
-    setHomestayData((p) => ({
-      ...p,
-      rooms: [
-        ...p.rooms,
-        {
-          roomName: "",
-          roomType: "double",
-          roomDescription: "",
-          bedType: "Queen",
-          bedCount: 1,
-          maxOccupancy: 2,
-          roomSizeSqm: "",
-          privateBathroom: true,
-          basePrice: "",
-          weekendPrice: "",
-          holidayPrice: "",
-          roomAmenities: [],
-          numberOfRooms: 1,
-        },
-      ],
-    }));
+    setHomestayData((p) => ({ ...p, rooms: [...p.rooms, blankRoom()] }));
   const removeRoom = (idx) =>
     setHomestayData((p) => ({
       ...p,
@@ -1441,6 +1604,7 @@ const PartnerServiceRegistration = () => {
         const hs = await serviceService.createHomestay({
           title: homestayData.title,
           description: homestayData.description,
+          propertyType: homestayData.propertyType,
           location: {
             name: homestayData.title,
             address: homestayData.address,
@@ -1450,67 +1614,79 @@ const PartnerServiceRegistration = () => {
             postalCode: homestayData.postalCode,
             latitude: Number(homestayData.latitude) || 0,
             longitude: Number(homestayData.longitude) || 0,
-            phoneNumber: homestayData.phoneNumber,
-            openingHours: homestayData.openingHours,
           },
           checkInTime: homestayData.checkInTime,
           checkOutTime: homestayData.checkOutTime,
           cancellationPolicy: homestayData.cancellationPolicy || undefined,
           houseRules: homestayData.houseRules || undefined,
+          amenities: homestayData.amenities,
+          hostApprovalRequired: homestayData.hostApprovalRequired,
         });
         // homestayId = row in homestays table (used for rooms/availability/submit)
         // serviceId  = row in services table (used for images)
         const homestayId = hs.homestayId || hs.id;
         const homestayServiceId = hs.serviceId;
 
-        const roomIds = [];
-        for (const room of homestayData.rooms) {
-          if (!room.roomName || !room.basePrice) continue;
-          const rr = await serviceService.addHomestayRoom(homestayId, {
-            roomName: room.roomName,
-            roomType: room.roomType || undefined,
-            roomDescription: room.roomDescription,
-            maxOccupancy: Number(room.maxOccupancy) || 2,
-            roomSizeSqm: Number(room.roomSizeSqm) || undefined,
-            bedType: room.bedType,
-            bedCount: Number(room.bedCount) || 1,
-            privateBathroom: room.privateBathroom,
-            basePrice: Number(room.basePrice),
-            weekendPrice: Number(room.weekendPrice) || Number(room.basePrice),
-            holidayPrice:
-              Number(room.holidayPrice) ||
-              Number(room.weekendPrice) ||
-              Number(room.basePrice),
-            roomAmenities: room.roomAmenities,
-            numberOfRooms: Number(room.numberOfRooms) || 1,
-          });
-          if (rr.roomId || rr.id) roomIds.push(rr.roomId || rr.id);
-        }
+        try {
+          const roomIds = [];
+          for (const room of homestayData.rooms) {
+            if (!room.roomName || !room.basePrice) continue;
+            const rr = await serviceService.addHomestayRoom(homestayId, {
+              roomName: room.roomName,
+              roomType: room.roomType || undefined,
+              roomDescription: room.roomDescription,
+              maxOccupancy: Number(room.maxOccupancy) || 2,
+              roomSizeSqm: Number(room.roomSizeSqm) || undefined,
+              bedType: room.bedType,
+              bedCount: Number(room.bedCount) || 1,
+              privateBathroom: room.roomAmenities.includes("Phòng tắm riêng"),
+              basePrice: Number(room.basePrice),
+              weekendPrice: Number(room.weekendPrice) || Number(room.basePrice),
+              holidayPrice:
+                Number(room.holidayPrice) ||
+                Number(room.weekendPrice) ||
+                Number(room.basePrice),
+              minNights: Number(room.minNights) || 1,
+              // cleaning/service fees set at property level, applied uniformly to all rooms
+              cleaningFee: Number(homestayData.cleaningFee) || 0,
+              serviceFee: Number(homestayData.serviceFee) || 0,
+              roomAmenities: room.roomAmenities,
+              numberOfRooms: Number(room.numberOfRooms) || 1,
+            });
+            if (rr.roomId || rr.id) {
+              const roomId = rr.roomId || rr.id;
+              if (room.roomImages && room.roomImages.length > 0) {
+                await serviceService.addRoomImages(roomId, room.roomImages);
+              }
+              roomIds.push(roomId);
+            }
+          }
 
-        if (
-          homestayData.availStartDate &&
-          homestayData.availEndDate &&
-          roomIds.length > 0
-        ) {
-          await serviceService.bulkHomestayAvailability(homestayId, {
-            startDate: homestayData.availStartDate,
-            endDate: homestayData.availEndDate,
-            rooms: roomIds.map((roomId) => ({
-              roomId,
-              // defaultPrice is optional — omit rather than send 0 (backend rejects non-positive)
-              ...(homestayData.availDefaultPrice
-                ? { defaultPrice: Number(homestayData.availDefaultPrice) }
-                : {}),
-              minNights: Number(homestayData.availMinNights) || 1,
-            })),
-            applyToAllDates: true,
-          });
-        }
+          if (
+            homestayData.availStartDate &&
+            homestayData.availEndDate &&
+            roomIds.length > 0
+          ) {
+            // Open the selected date range for all rooms — min_nights per room is set via the room record
+            await serviceService.bulkHomestayAvailability(homestayId, {
+              startDate: homestayData.availStartDate,
+              endDate: homestayData.availEndDate,
+              rooms: roomIds.map((roomId) => ({ roomId })),
+              applyToAllDates: true,
+            });
+          }
 
-        if (homestayData.images.length > 0) {
-          await serviceService.addServiceImages(homestayServiceId, homestayData.images);
+          if (homestayData.images.length > 0) {
+            await serviceService.addServiceImages(homestayServiceId, homestayData.images);
+          }
+          await serviceService.submitHomestay(homestayId);
+        } catch (err) {
+          // createHomestay already committed — roll it back so stale drafts don't accumulate
+          if (homestayServiceId) {
+            await serviceService.deleteService(homestayServiceId).catch(() => {});
+          }
+          throw err;
         }
-        await serviceService.submitHomestay(homestayId);
       } else if (serviceType === "car-rental") {
         if (carRentalData.vehicles.length === 0) {
           setPublishError("Vui lòng thêm ít nhất một xe.");
