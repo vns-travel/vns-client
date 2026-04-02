@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "";
 
 async function handleResponse(res) {
   const text = await res.text();

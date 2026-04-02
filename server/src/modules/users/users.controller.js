@@ -15,9 +15,10 @@ async function getMe(req, res, next) {
 async function updateMe(req, res, next) {
   try {
     const data = await service.updateProfile(req.user.id, {
-      fullName:  req.body.fullName,
-      phone:     req.body.phone,
-      avatarUrl: req.body.avatarUrl,
+      fullName:     req.body.fullName,
+      phone:        req.body.phone,
+      avatarUrl:    req.body.avatarUrl,
+      businessName: req.body.businessName,
     });
     res.json({ success: true, data });
   } catch (err) {
@@ -37,4 +38,16 @@ async function changePassword(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, changePassword };
+async function upsertDocument(req, res, next) {
+  try {
+    await service.upsertDocument(req.user.id, {
+      docType: req.params.docType,
+      fileUrl: req.body.fileUrl,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getMe, updateMe, changePassword, upsertDocument };

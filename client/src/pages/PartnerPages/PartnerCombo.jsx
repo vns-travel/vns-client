@@ -1018,7 +1018,10 @@ const PartnerCombo = () => {
         open={deleteId !== null}
         title="Xác nhận xóa combo"
         message="Bạn có chắc muốn xóa combo này không? Hành động này không thể hoàn tác."
-        onConfirm={() => { handleDelete(deleteId); setDeleteId(null); }}
+        onConfirm={() => {
+          handleDelete(deleteId);
+          setDeleteId(null);
+        }}
         onCancel={() => setDeleteId(null)}
       />
     </>

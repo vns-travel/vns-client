@@ -1439,7 +1439,10 @@ const PartnerServiceRegistration = () => {
           cancellationPolicy: homestayData.cancellationPolicy || undefined,
           houseRules: homestayData.houseRules || undefined,
         });
-        const homestayId = hs.homestayId || hs.id || hs.serviceId;
+        // homestayId = row in homestays table (used for rooms/availability/submit)
+        // serviceId  = row in services table (used for images)
+        const homestayId = hs.homestayId || hs.id;
+        const homestayServiceId = hs.serviceId;
 
         const roomIds = [];
         for (const room of homestayData.rooms) {
@@ -1482,7 +1485,7 @@ const PartnerServiceRegistration = () => {
         }
 
         if (homestayData.images.length > 0) {
-          await serviceService.addServiceImages(homestayId, homestayData.images);
+          await serviceService.addServiceImages(homestayServiceId, homestayData.images);
         }
         await serviceService.submitHomestay(homestayId);
       } else if (serviceType === "car-rental") {
