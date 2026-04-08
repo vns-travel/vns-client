@@ -25,3 +25,15 @@ scripts/service-account.json
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code context files
+.claude/
+CLAUDE.md
+
+# Documentation / markdown files (not part of the app)
+*.md
+!README.md
+
+# Docs folder
+docs/
+doc/

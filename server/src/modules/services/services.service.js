@@ -245,6 +245,23 @@ async function getServiceById(serviceId) {
          FROM rooms WHERE homestay_id = $1 ORDER BY room_name`,
         [hs.id]
       );
+      // Fetch images for all rooms in one query and attach them by room id
+      let roomImages = {};
+      if (roomRows.length) {
+        const roomIds = roomRows.map(r => r.roomId);
+        const { rows: imgRows } = await pool.query(
+          `SELECT room_id AS "roomId", url
+           FROM room_images
+           WHERE room_id = ANY($1::uuid[])
+           ORDER BY sort_order`,
+          [roomIds]
+        );
+        for (const img of imgRows) {
+          if (!roomImages[img.roomId]) roomImages[img.roomId] = [];
+          roomImages[img.roomId].push(img.url);
+        }
+      }
+
       base.homestayId           = hs.id;
       base.checkInTime          = hs.checkInTime;
       base.checkOutTime         = hs.checkOutTime;
@@ -252,7 +269,7 @@ async function getServiceById(serviceId) {
       base.houseRules           = hs.houseRules;
       base.amenities            = hs.amenities || [];
       base.hostApprovalRequired = hs.hostApprovalRequired || false;
-      base.rooms                = roomRows;
+      base.rooms                = roomRows.map(r => ({ ...r, images: roomImages[r.roomId] || [] }));
     }
   }
 

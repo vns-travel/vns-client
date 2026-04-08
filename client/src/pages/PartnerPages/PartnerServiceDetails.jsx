@@ -3,11 +3,12 @@ import {
   Home, MapPin, Camera, Calendar, Bed, List, Clock, Pencil, Save,
   ToggleLeft, ToggleRight, Eye, ArrowLeft, Star, Users, TrendingUp,
   Loader2, AlertCircle, MessageSquare, Plus, Trash2, ChevronUp,
-  ChevronDown, X, Power,
+  ChevronDown, X,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { serviceService, SERVICE_TYPE } from "../../services/serviceService";
 import { reviewService } from "../../services/reviewService";
+import AvailabilityCalendar from "../../components/AvailabilityCalendar";
 
 const formatPrice = (n) =>
   n != null ? new Intl.NumberFormat("vi-VN").format(n) + " ₫" : "—";
@@ -29,6 +30,31 @@ const StatCard = ({ label, value, icon: Icon, color }) => (
     <div>
       <p className="text-xs text-gray-500">{label}</p>
       <p className="text-base font-bold text-gray-900">{value}</p>
+    </div>
+  </div>
+);
+
+const PROPERTY_AMENITIES = ["WiFi miễn phí", "Điều hòa", "Bếp", "Máy giặt", "Bãi đỗ xe", "Hồ bơi"];
+const ROOM_AMENITIES     = ["Phòng tắm riêng", "Ban công", "Bồn tắm", "View biển", "TV"];
+
+/* ─── Amenities checklist (shared by property and room edit forms) ─── */
+const AmenitiesChecklist = ({ label, options, selected, onChange }) => (
+  <div>
+    {label && <label className="block text-xs text-gray-500 mb-2">{label}</label>}
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+      {options.map((opt) => (
+        <label key={opt} className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selected.includes(opt)}
+            onChange={(e) =>
+              onChange(e.target.checked ? [...selected, opt] : selected.filter((s) => s !== opt))
+            }
+            className="w-4 h-4 accent-primary"
+          />
+          <span className="text-sm text-gray-700">{opt}</span>
+        </label>
+      ))}
     </div>
   </div>
 );
@@ -208,8 +234,9 @@ const HomestayPropertyEditor = ({ service, homestayId, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const [warning, setWarning] = useState("");
   const [form, setForm] = useState({
-    checkInTime:          service.checkInTime || "",
-    checkOutTime:         service.checkOutTime || "",
+    // Slice to HH:MM — PostgreSQL TIME columns return "HH:MM:SS" which fails the backend regex
+    checkInTime:          service.checkInTime?.slice(0, 5)  || "",
+    checkOutTime:         service.checkOutTime?.slice(0, 5) || "",
     houseRules:           service.houseRules || "",
     cancellationPolicy:   service.cancellationPolicy || "",
     amenities:            Array.isArray(service.amenities) ? service.amenities : [],
@@ -325,7 +352,7 @@ const HomestayPropertyEditor = ({ service, homestayId, onSaved }) => {
           <textarea rows={3} value={form.cancellationPolicy} onChange={(e) => set("cancellationPolicy", e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary focus:border-primary" />
         </div>
-        <TagInput label="Tiện nghi" tags={form.amenities} onChange={(v) => set("amenities", v)} />
+        <AmenitiesChecklist label="Tiện nghi" options={PROPERTY_AMENITIES} selected={form.amenities} onChange={(v) => set("amenities", v)} />
         <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
           <div>
             <p className="text-sm font-medium text-gray-800">Yêu cầu chấp thuận trước</p>
@@ -348,26 +375,32 @@ const BED_TYPES  = ["King", "Queen", "Twin", "Single", "Bunk", "Sofa"];
 
 const emptyRoomForm = {
   roomName: "", roomType: "", description: "", maxOccupancy: "",
-  roomSizeSqm: "", bedType: "", bedCount: "", privateBathroom: true,
+  roomSizeSqm: "", bedType: "", bedCount: "",
   basePrice: "", weekendPrice: "", holidayPrice: "", totalUnits: 1, minNights: 1, amenities: [],
 };
 
-const roomFormFromRoom = (r) => ({
-  roomName:      r.roomName      || "",
-  roomType:      r.roomType      || "",
-  description:   r.description   || "",
-  maxOccupancy:  r.maxOccupancy  ?? "",
-  roomSizeSqm:   r.roomSizeSqm   ?? "",
-  bedType:       r.bedType       || "",
-  bedCount:      r.bedCount      ?? "",
-  privateBathroom: r.privateBathroom ?? true,
-  basePrice:     r.basePrice     ?? "",
-  weekendPrice:  r.weekendPrice  ?? "",
-  holidayPrice:  r.holidayPrice  ?? "",
-  totalUnits:    r.totalUnits    ?? 1,
-  minNights:     r.minNights     ?? 1,
-  amenities:     Array.isArray(r.amenities) ? r.amenities : [],
-});
+const roomFormFromRoom = (r) => {
+  const amenities = Array.isArray(r.amenities) ? [...r.amenities] : [];
+  // Back-compat: if the room has privateBathroom=true but it's not yet in the amenities array, add it
+  if (r.privateBathroom && !amenities.includes("Phòng tắm riêng")) {
+    amenities.push("Phòng tắm riêng");
+  }
+  return {
+    roomName:     r.roomName     || "",
+    roomType:     r.roomType     || "",
+    description:  r.description  || "",
+    maxOccupancy: r.maxOccupancy ?? "",
+    roomSizeSqm:  r.roomSizeSqm  ?? "",
+    bedType:      r.bedType      || "",
+    bedCount:     r.bedCount     ?? "",
+    basePrice:    r.basePrice    ?? "",
+    weekendPrice: r.weekendPrice ?? "",
+    holidayPrice: r.holidayPrice ?? "",
+    totalUnits:   r.totalUnits   ?? 1,
+    minNights:    r.minNights    ?? 1,
+    amenities,
+  };
+};
 
 const toInt   = (v) => v !== "" && v != null ? parseInt(v, 10)   : undefined;
 const toFloat = (v) => v !== "" && v != null ? parseFloat(v)      : undefined;
@@ -381,7 +414,7 @@ const buildEditPayload = (form) => ({
   roomSizeSqm:     toFloat(form.roomSizeSqm),
   bedType:         form.bedType   || undefined,
   bedCount:        toInt(form.bedCount),
-  privateBathroom: form.privateBathroom,
+  privateBathroom: form.amenities.includes("Phòng tắm riêng"),
   basePrice:       parseFloat(form.basePrice),
   weekendPrice:    toFloat(form.weekendPrice),
   holidayPrice:    toFloat(form.holidayPrice),
@@ -399,7 +432,7 @@ const buildAddPayload = (form) => ({
   roomSizeSqm:     toFloat(form.roomSizeSqm),
   bedType:         form.bedType   || undefined,
   bedCount:        toInt(form.bedCount),
-  privateBathroom: form.privateBathroom,
+  privateBathroom: form.amenities.includes("Phòng tắm riêng"),
   basePrice:       parseFloat(form.basePrice),
   weekendPrice:    toFloat(form.weekendPrice),
   holidayPrice:    toFloat(form.holidayPrice),
@@ -464,18 +497,76 @@ const RoomFormFields = ({ form, onChange }) => {
           <label className="block text-xs text-gray-500 mb-1">Số đêm tối thiểu</label>
           <input type="number" min={1} value={form.minNights} onChange={(e) => set("minNights", e.target.value)} className={inputClass} />
         </div>
-        <div className="flex items-center gap-2 pt-5">
-          <input type="checkbox" id="pBathroom" checked={form.privateBathroom}
-            onChange={(e) => set("privateBathroom", e.target.checked)} className="w-4 h-4 accent-primary" />
-          <label htmlFor="pBathroom" className="text-sm text-gray-700">Phòng tắm riêng</label>
-        </div>
       </div>
       <div>
         <label className="block text-xs text-gray-500 mb-1">Mô tả phòng</label>
         <textarea rows={2} value={form.description} onChange={(e) => set("description", e.target.value)}
           className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm resize-none focus:ring-1 focus:ring-primary" />
       </div>
-      <TagInput label="Tiện nghi phòng" tags={form.amenities} onChange={(v) => set("amenities", v)} />
+      <AmenitiesChecklist label="Tiện nghi phòng" options={ROOM_AMENITIES} selected={form.amenities} onChange={(v) => set("amenities", v)} />
+    </div>
+  );
+};
+
+/* ─── Lightbox (shared zoom modal) ─── */
+const Lightbox = ({ url, onClose }) => {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center"
+      onClick={onClose}>
+      <img src={url} alt=""
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()} />
+      <button onClick={onClose}
+        className="absolute top-4 right-4 text-white bg-black/40 rounded-full p-2 hover:bg-black/60">
+        <X className="w-6 h-6" />
+      </button>
+    </div>
+  );
+};
+
+/* ─── Room Images Editor (used inside add/edit forms) ─── */
+const RoomImagesEditor = ({ images, onChange }) => {
+  const [newUrl, setNewUrl] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState(null);
+  const add = () => {
+    const u = newUrl.trim();
+    if (u) { onChange([...images, u]); setNewUrl(""); }
+  };
+  const remove = (i) => onChange(images.filter((_, j) => j !== i));
+  return (
+    <div className="mt-4">
+      {lightboxUrl && <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+      <p className="text-xs text-gray-500 mb-2">Hình ảnh phòng</p>
+      {images.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+          {images.map((url, i) => (
+            <div key={i} className="relative flex-shrink-0">
+              <img src={url} alt=""
+                className="h-24 w-36 object-cover rounded-lg border border-gray-200 cursor-zoom-in"
+                onClick={() => setLightboxUrl(url)}
+                onError={(e) => { e.target.style.display = "none"; }} />
+              <button onClick={() => remove(i)}
+                className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 hover:bg-red-100 text-red-500">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input type="url" value={newUrl} onChange={(e) => setNewUrl(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), add())}
+          placeholder="Dán URL ảnh rồi Enter..."
+          className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-primary" />
+        <button onClick={add} className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded text-sm hover:bg-gray-200 flex items-center gap-1">
+          <Plus className="w-4 h-4" /> Thêm
+        </button>
+      </div>
     </div>
   );
 };
@@ -485,18 +576,20 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
   const [rooms, setRooms]           = useState(initialRooms || []);
   const [editingId, setEditingId]   = useState(null); // roomId being edited
   const [editForm, setEditForm]     = useState(emptyRoomForm);
+  const [editImages, setEditImages] = useState([]); // URL strings for the room being edited
   const [addingRoom, setAddingRoom] = useState(false);
   const [addForm, setAddForm]       = useState(emptyRoomForm);
+  const [addImages, setAddImages]   = useState([]); // URL strings for the new room
   const [saving, setSaving]         = useState(false);
-  const [deactivating, setDeactivating] = useState(null); // roomId being toggled
 
   const startEdit = (room) => {
     setEditingId(room.roomId);
     setEditForm(roomFormFromRoom(room));
+    setEditImages(Array.isArray(room.images) ? room.images : []);
     setAddingRoom(false);
   };
 
-  const cancelEdit = () => { setEditingId(null); setEditForm(emptyRoomForm); };
+  const cancelEdit = () => { setEditingId(null); setEditForm(emptyRoomForm); setEditImages([]); };
 
   const handleSaveEdit = async () => {
     if (!editForm.roomName || !editForm.basePrice) {
@@ -505,14 +598,18 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
     setSaving(true);
     try {
       await serviceService.updateRoom(homestayId, editingId, buildEditPayload(editForm));
+      if (editImages.length > 0) {
+        await serviceService.addRoomImages(editingId, editImages);
+      }
       const updated = rooms.map((r) =>
         r.roomId === editingId
-          ? { ...r, ...editForm, totalUnits: toInt(editForm.totalUnits) || 1, minNights: toInt(editForm.minNights) || 1 }
+          ? { ...r, ...editForm, totalUnits: toInt(editForm.totalUnits) || 1, minNights: toInt(editForm.minNights) || 1, images: editImages }
           : r
       );
       setRooms(updated);
       onRoomsChanged(updated);
       setEditingId(null);
+      setEditImages([]);
     } catch (err) {
       alert(err.message || "Lưu thất bại.");
     } finally {
@@ -527,6 +624,9 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
     setSaving(true);
     try {
       const result = await serviceService.addHomestayRoom(homestayId, buildAddPayload(addForm));
+      if (addImages.length > 0) {
+        await serviceService.addRoomImages(result.roomId, addImages);
+      }
       const newRoom = {
         roomId:          result.roomId,
         roomName:        addForm.roomName,
@@ -544,36 +644,18 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
         minNights:       toInt(addForm.minNights)  || 1,
         amenities:       addForm.amenities,
         isActive:        true,
+        images:          addImages,
       };
       const updated = [...rooms, newRoom];
       setRooms(updated);
       onRoomsChanged(updated);
       setAddingRoom(false);
       setAddForm(emptyRoomForm);
+      setAddImages([]);
     } catch (err) {
       alert(err.message || "Thêm phòng thất bại.");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleToggleActive = async (room) => {
-    setDeactivating(room.roomId);
-    try {
-      const result = await serviceService.toggleRoomActive(homestayId, room.roomId);
-      if (result.hasPendingBookings && !result.isActive) {
-        // Warn but don't block — deactivation already happened
-        alert(`Phòng đã tạm ngưng. Lưu ý: có đặt phòng đang xử lý cho phòng này — những đặt phòng đó vẫn tiếp tục bình thường.`);
-      }
-      const updated = rooms.map((r) =>
-        r.roomId === room.roomId ? { ...r, isActive: result.isActive } : r
-      );
-      setRooms(updated);
-      onRoomsChanged(updated);
-    } catch (err) {
-      alert(err.message || "Thao tác thất bại.");
-    } finally {
-      setDeactivating(null);
     }
   };
 
@@ -597,7 +679,7 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
       {/* Existing rooms */}
       {rooms.map((room) => (
         <div key={room.roomId}
-          className={`border rounded-xl overflow-hidden ${room.isActive === false ? "border-gray-200 opacity-70" : "border-gray-200"}`}>
+          className="border rounded-xl overflow-hidden border-gray-200">
           {/* Room header row */}
           <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-2">
@@ -605,33 +687,13 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
               {room.roomType && (
                 <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded">{room.roomType}</span>
               )}
-              {room.isActive === false && (
-                <span className="text-xs text-orange-700 bg-orange-100 px-2 py-0.5 rounded">Tạm ngưng</span>
-              )}
             </div>
             <div className="flex items-center gap-2">
               {editingId !== room.roomId && (
-                <>
-                  <button onClick={() => startEdit(room)}
-                    className="flex items-center gap-1 text-xs text-gray-600 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">
-                    <Pencil className="w-3 h-3" /> Sửa
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(room)}
-                    disabled={deactivating === room.roomId}
-                    title={room.isActive === false ? "Kích hoạt lại" : "Tạm ngưng"}
-                    className={`flex items-center gap-1 text-xs border px-2 py-1 rounded disabled:opacity-50 ${
-                      room.isActive === false
-                        ? "text-green-700 border-green-300 hover:bg-green-50"
-                        : "text-orange-700 border-orange-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    {deactivating === room.roomId
-                      ? <Loader2 className="w-3 h-3 animate-spin" />
-                      : <Power className="w-3 h-3" />}
-                    {room.isActive === false ? "Kích hoạt" : "Tạm ngưng"}
-                  </button>
-                </>
+                <button onClick={() => startEdit(room)}
+                  className="flex items-center gap-1 text-xs text-gray-600 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">
+                  <Pencil className="w-3 h-3" /> Sửa
+                </button>
               )}
             </div>
           </div>
@@ -641,6 +703,7 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
             {editingId === room.roomId ? (
               <div>
                 <RoomFormFields form={editForm} onChange={setEditForm} />
+                <RoomImagesEditor images={editImages} onChange={setEditImages} />
                 <div className="flex gap-2 mt-4 justify-end">
                   <button onClick={cancelEdit} disabled={saving}
                     className="text-sm text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50">
@@ -658,6 +721,15 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
               </div>
             ) : (
               <div>
+                {Array.isArray(room.images) && room.images.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+                    {room.images.map((url, i) => (
+                      <img key={i} src={url} alt=""
+                        className="h-32 w-48 object-cover rounded-lg flex-shrink-0 border border-gray-200"
+                        onError={(e) => { e.target.style.display = "none"; }} />
+                    ))}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <InfoItem label="Giá ngày thường" value={formatPrice(room.basePrice)} />
                   <InfoItem label="Giá cuối tuần"   value={formatPrice(room.weekendPrice)} />
@@ -689,14 +761,15 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
         <div className="border border-primary/30 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 bg-primary/5 border-b border-primary/20">
             <span className="font-semibold text-primary">Thêm loại phòng mới</span>
-            <button onClick={() => setAddingRoom(false)} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setAddingRoom(false); setAddImages([]); }} className="text-gray-400 hover:text-gray-600">
               <X className="w-4 h-4" />
             </button>
           </div>
           <div className="p-5 bg-white">
             <RoomFormFields form={addForm} onChange={setAddForm} />
+            <RoomImagesEditor images={addImages} onChange={setAddImages} />
             <div className="flex gap-2 mt-4 justify-end">
-              <button onClick={() => setAddingRoom(false)} disabled={saving}
+              <button onClick={() => { setAddingRoom(false); setAddImages([]); }} disabled={saving}
                 className="text-sm text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50">
                 Hủy
               </button>
@@ -715,11 +788,12 @@ const RoomsManager = ({ rooms: initialRooms, homestayId, onRoomsChanged }) => {
 
 /* ─── Images Manager ─── */
 const ImagesManager = ({ images: initialImages, serviceId, onImagesChanged }) => {
-  const [imgs, setImgs]     = useState(
+  const [imgs, setImgs]         = useState(
     (Array.isArray(initialImages) ? initialImages : []).map((i) => i.url || i)
   );
-  const [newUrl, setNewUrl] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [newUrl, setNewUrl]     = useState("");
+  const [saving, setSaving]     = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   const moveUp   = (i) => { if (i === 0) return; const a = [...imgs]; [a[i-1], a[i]] = [a[i], a[i-1]]; setImgs(a); };
   const moveDown = (i) => { if (i === imgs.length - 1) return; const a = [...imgs]; [a[i+1], a[i]] = [a[i], a[i+1]]; setImgs(a); };
@@ -745,8 +819,10 @@ const ImagesManager = ({ images: initialImages, serviceId, onImagesChanged }) =>
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-800 text-lg">Hình ảnh dịch vụ</h3>
+      {lightboxUrl && <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-gray-500">Hình ảnh dịch vụ</p>
         <button onClick={handleSave} disabled={saving || imgs.length === 0}
           className="flex items-center gap-1.5 text-sm bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover disabled:opacity-50">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -755,18 +831,33 @@ const ImagesManager = ({ images: initialImages, serviceId, onImagesChanged }) =>
       </div>
 
       {imgs.length === 0
-        ? <p className="text-sm text-gray-400 italic mb-4">Chưa có hình ảnh.</p>
+        ? <p className="text-sm text-gray-400 italic mb-3">Chưa có hình ảnh.</p>
         : (
-          <div className="space-y-2 mb-4">
+          <div className="flex gap-2 overflow-x-auto pb-3 mb-3">
             {imgs.map((url, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 border border-gray-200 rounded-lg bg-gray-50">
-                <img src={url} alt="" className="w-16 h-12 object-cover rounded flex-shrink-0" onError={(e) => { e.target.style.display = "none"; }} />
-                <span className="text-xs text-gray-400 flex-shrink-0 w-5 text-center">#{i + 1}</span>
-                <span className="text-xs text-gray-600 truncate flex-1">{url}</span>
-                <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => moveUp(i)}   disabled={i === 0}             className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ChevronUp   className="w-4 h-4" /></button>
-                  <button onClick={() => moveDown(i)} disabled={i === imgs.length-1} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
-                  <button onClick={() => remove(i)}   className="p-1 hover:bg-red-100 rounded text-red-500"><X className="w-4 h-4" /></button>
+              <div key={i} className="relative flex-shrink-0 group">
+                <img src={url} alt=""
+                  className="h-24 w-36 object-cover rounded-lg border border-gray-200 cursor-zoom-in"
+                  onClick={() => setLightboxUrl(url)}
+                  onError={(e) => { e.target.style.display = "none"; }} />
+                {i === 0 && (
+                  <span className="absolute bottom-1 left-1 text-[10px] bg-primary text-white px-1.5 py-0.5 rounded font-medium pointer-events-none">
+                    Ảnh bìa
+                  </span>
+                )}
+                <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => moveUp(i)} disabled={i === 0}
+                    className="bg-white/90 rounded p-0.5 hover:bg-gray-100 disabled:opacity-30 shadow-sm">
+                    <ChevronUp className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => moveDown(i)} disabled={i === imgs.length - 1}
+                    className="bg-white/90 rounded p-0.5 hover:bg-gray-100 disabled:opacity-30 shadow-sm">
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => remove(i)}
+                    className="bg-white/90 rounded p-0.5 hover:bg-red-100 text-red-500 shadow-sm">
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -787,7 +878,7 @@ const ImagesManager = ({ images: initialImages, serviceId, onImagesChanged }) =>
           <Plus className="w-4 h-4" /> Thêm
         </button>
       </div>
-      <p className="text-xs text-gray-400 mt-2">Ảnh đầu tiên là ảnh bìa. Nhấn "Lưu thứ tự" để áp dụng thay đổi.</p>
+      <p className="text-xs text-gray-400 mt-2">Ảnh đầu tiên là ảnh bìa. Hover ảnh để sắp xếp thứ tự hoặc xóa. Nhấn "Lưu thứ tự" để áp dụng.</p>
     </div>
   );
 };
@@ -867,7 +958,8 @@ const PartnerServiceDetails = () => {
     : svcType === 1
     ? [{ id: "itinerary", label: "Lịch trình", icon: List }, { id: "schedules", label: "Lịch khởi hành", icon: Clock }]
     : [];
-  const imagTab    = [{ id: "images",  label: "Hình ảnh",  icon: Camera }];
+  // Homestay images are shown inline in "Tổng quan" — no separate tab needed
+  const imagTab    = svcType !== 0 ? [{ id: "images", label: "Hình ảnh", icon: Camera }] : [];
   const reviewTab  = [{ id: "reviews", label: "Đánh giá",  icon: MessageSquare }];
   const tabs       = [...baseTabs, ...extraTabs, ...imagTab, ...reviewTab];
 
@@ -1014,13 +1106,20 @@ const PartnerServiceDetails = () => {
                   </div>
                 )}
 
-                {/* Homestay operational details — always editable */}
+                {/* Homestay operational details + images — always editable */}
                 {!isEditing && svcType === 0 && (
-                  <HomestayPropertyEditor
-                    service={service}
-                    homestayId={service.homestayId}
-                    onSaved={(updated) => setService((prev) => ({ ...prev, ...updated }))}
-                  />
+                  <>
+                    <HomestayPropertyEditor
+                      service={service}
+                      homestayId={service.homestayId}
+                      onSaved={(updated) => setService((prev) => ({ ...prev, ...updated }))}
+                    />
+                    <ImagesManager
+                      images={images}
+                      serviceId={serviceId}
+                      onImagesChanged={(newImgs) => setService((prev) => ({ ...prev, images: newImgs }))}
+                    />
+                  </>
                 )}
 
                 {/* Tour overview (read-only) */}
@@ -1077,16 +1176,12 @@ const PartnerServiceDetails = () => {
               />
             )}
 
-            {/* ── Homestay availability (read-only summary) ── */}
+            {/* ── Homestay availability calendar ── */}
             {activeTab === "availability" && (
-              <div>
-                <h3 className="font-semibold text-gray-800 text-lg mb-3">Tình trạng phòng trống</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
-                    Còn trống: <span className="font-bold text-gray-900">{formatNumber(service.availability)}</span>
-                  </p>
-                </div>
-              </div>
+              <AvailabilityCalendar
+                homestayId={service.homestayId}
+                rooms={service.rooms || []}
+              />
             )}
 
             {/* ── Tour tabs ── */}

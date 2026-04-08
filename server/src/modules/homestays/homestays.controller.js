@@ -11,6 +11,7 @@ async function createHomestay(req, res, next) {
       checkOutTime: req.body.checkOutTime,
       cancellationPolicy: req.body.cancellationPolicy,
       houseRules: req.body.houseRules,
+      hostApprovalRequired: req.body.hostApprovalRequired,
     });
     res.status(201).json({ success: true, data });
   } catch (err) {
@@ -142,4 +143,34 @@ async function addRoomImages(req, res, next) {
   }
 }
 
-module.exports = { createHomestay, addRoom, bulkAvailability, submitHomestay, updateHomestayDetails, updateRoom, toggleRoomActive, addRoomImages };
+async function getAvailability(req, res, next) {
+  try {
+    const data = await service.getAvailability({
+      partnerId:  req.user.partnerId,
+      homestayId: req.params.homestayId,
+      startDate:  req.query.startDate,
+      endDate:    req.query.endDate,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function blockAvailability(req, res, next) {
+  try {
+    const data = await service.blockAvailability({
+      partnerId:  req.user.partnerId,
+      homestayId: req.params.homestayId,
+      startDate:  req.body.startDate,
+      endDate:    req.body.endDate,
+      roomIds:    req.body.roomIds,
+      isBlocked:  req.body.isBlocked,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { createHomestay, addRoom, bulkAvailability, submitHomestay, updateHomestayDetails, updateRoom, toggleRoomActive, addRoomImages, getAvailability, blockAvailability };

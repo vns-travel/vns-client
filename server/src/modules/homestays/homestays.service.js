@@ -4,7 +4,7 @@ const { pool } = require('../../config/db');
  * Create a homestay — inserts a services row and a homestays row in a transaction.
  * Returns { homestayId, serviceId }.
  */
-async function createHomestay({ partnerId, title, description, location, checkInTime, checkOutTime, cancellationPolicy, houseRules }) {
+async function createHomestay({ partnerId, title, description, location, checkInTime, checkOutTime, cancellationPolicy, houseRules, hostApprovalRequired }) {
   // Doc §system-wide: partner must be verified before creating any service
   const { rows: pRows } = await pool.query(
     `SELECT verify_status FROM partner_profiles WHERE id = $1`,
@@ -35,10 +35,10 @@ async function createHomestay({ partnerId, title, description, location, checkIn
     const serviceId = svcRes.rows[0].id;
 
     const hsRes = await client.query(
-      `INSERT INTO homestays (service_id, check_in_time, check_out_time, cancellation_policy, house_rules)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO homestays (service_id, check_in_time, check_out_time, cancellation_policy, house_rules, host_approval_required)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [serviceId, checkInTime ?? null, checkOutTime ?? null, cancellationPolicy ?? null, houseRules ?? null]
+      [serviceId, checkInTime ?? null, checkOutTime ?? null, cancellationPolicy ?? null, houseRules ?? null, hostApprovalRequired ?? false]
     );
     const homestayId = hsRes.rows[0].id;
 
@@ -474,4 +474,150 @@ async function insertRoomImages({ partnerId, roomId, urls }) {
   }
 }
 
-module.exports = { createHomestay, addRoom, bulkAvailability, submitHomestay, updateHomestayDetails, updateRoom, toggleRoomActive, insertRoomImages };
+/**
+ * Return availability rows for all rooms in a homestay for a given date range.
+ * Dates with no row in room_availability are simply absent from each room's array —
+ * the frontend treats them as "not yet opened".
+ */
+async function getAvailability({ partnerId, homestayId, startDate, endDate }) {
+  const { rows: ownerRows } = await pool.query(
+    `SELECT s.partner_id FROM homestays h JOIN services s ON s.id = h.service_id WHERE h.id = $1`,
+    [homestayId]
+  );
+  if (!ownerRows.length) {
+    const err = new Error('Homestay không tồn tại');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (ownerRows[0].partner_id !== partnerId) {
+    const err = new Error('Forbidden');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const { rows } = await pool.query(
+    `SELECT
+       r.id            AS "roomId",
+       r.room_name     AS "roomName",
+       r.total_units   AS "totalUnits",
+       r.base_price    AS "basePrice",
+       r.weekend_price AS "weekendPrice",
+       ra.date::text,
+       ra.available_units AS "availableUnits",
+       ra.price_override  AS "priceOverride",
+       ra.min_nights      AS "minNights",
+       ra.is_blocked      AS "isBlocked"
+     FROM rooms r
+     LEFT JOIN room_availability ra
+       ON ra.room_id = r.id AND ra.date BETWEEN $2 AND $3
+     WHERE r.homestay_id = $1
+     ORDER BY r.room_name, ra.date`,
+    [homestayId, startDate, endDate]
+  );
+
+  // Group by room
+  const roomMap = new Map();
+  for (const row of rows) {
+    if (!roomMap.has(row.roomId)) {
+      roomMap.set(row.roomId, {
+        roomId:      row.roomId,
+        roomName:    row.roomName,
+        totalUnits:  row.totalUnits,
+        basePrice:   row.basePrice,
+        weekendPrice: row.weekendPrice,
+        availability: [],
+      });
+    }
+    // LEFT JOIN means rows without availability still appear — skip null dates
+    if (row.date) {
+      roomMap.get(row.roomId).availability.push({
+        date:           row.date,
+        availableUnits: row.availableUnits,
+        priceOverride:  row.priceOverride,
+        minNights:      row.minNights,
+        isBlocked:      row.isBlocked,
+      });
+    }
+  }
+
+  return Array.from(roomMap.values());
+}
+
+/**
+ * Block or unblock a date range across specified rooms (or all rooms if none specified).
+ * Blocking sets is_blocked = true on existing rows and inserts rows for unopened dates.
+ * Unblocking sets is_blocked = false and restores available_units to total_units.
+ */
+async function blockAvailability({ partnerId, homestayId, startDate, endDate, roomIds, isBlocked }) {
+  const { rows: ownerRows } = await pool.query(
+    `SELECT s.partner_id FROM homestays h JOIN services s ON s.id = h.service_id WHERE h.id = $1`,
+    [homestayId]
+  );
+  if (!ownerRows.length) {
+    const err = new Error('Homestay không tồn tại');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (ownerRows[0].partner_id !== partnerId) {
+    const err = new Error('Forbidden');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const start = new Date(startDate);
+  const end   = new Date(endDate);
+  if (end < start) {
+    const err = new Error('endDate must be on or after startDate');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Resolve target rooms — either the specified subset or all rooms for this homestay
+  let targetRoomIds = roomIds && roomIds.length > 0 ? roomIds : null;
+  const { rows: roomRows } = targetRoomIds
+    ? await pool.query(
+        `SELECT id, total_units FROM rooms WHERE id = ANY($1::uuid[]) AND homestay_id = $2`,
+        [targetRoomIds, homestayId]
+      )
+    : await pool.query(
+        `SELECT id, total_units FROM rooms WHERE homestay_id = $1`,
+        [homestayId]
+      );
+
+  const roomMeta = Object.fromEntries(roomRows.map(r => [r.id, r.total_units]));
+
+  const client = await pool.connect();
+  let totalCount = 0;
+  try {
+    await client.query('BEGIN');
+    for (const [roomId, totalUnits] of Object.entries(roomMeta)) {
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        const dateStr = cursor.toISOString().slice(0, 10);
+        await client.query(
+          `INSERT INTO room_availability (room_id, date, available_units, min_nights, is_blocked)
+           VALUES ($1, $2, $3, 1, $4)
+           ON CONFLICT (room_id, date) DO UPDATE
+             SET is_blocked      = EXCLUDED.is_blocked,
+                 available_units = CASE
+                   WHEN EXCLUDED.is_blocked = false THEN $3
+                   ELSE room_availability.available_units
+                 END`,
+          [roomId, dateStr, totalUnits, isBlocked]
+        );
+        totalCount++;
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  return { count: totalCount };
+}
+
+module.exports = { createHomestay, addRoom, bulkAvailability, submitHomestay, updateHomestayDetails, updateRoom, toggleRoomActive, insertRoomImages, getAvailability, blockAvailability };

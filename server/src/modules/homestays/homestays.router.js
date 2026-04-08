@@ -25,10 +25,11 @@ const createHomestaySchema = z.object({
     phoneNumber:  z.string().max(20).trim().optional(),
     openingHours: z.string().max(200).trim().optional(),
   }).optional(),
-  checkInTime:        z.string().regex(timeRegex, 'checkInTime must be HH:MM').optional(),
-  checkOutTime:       z.string().regex(timeRegex, 'checkOutTime must be HH:MM').optional(),
-  cancellationPolicy: z.string().max(2000).trim().optional(),
-  houseRules:         z.string().max(2000).trim().optional(),
+  checkInTime:          z.string().regex(timeRegex, 'checkInTime must be HH:MM').optional(),
+  checkOutTime:         z.string().regex(timeRegex, 'checkOutTime must be HH:MM').optional(),
+  cancellationPolicy:   z.string().max(2000).trim().optional(),
+  houseRules:           z.string().max(2000).trim().optional(),
+  hostApprovalRequired: z.boolean().optional(),
 });
 
 const addRoomSchema = z.object({
@@ -146,6 +147,30 @@ router.patch(
   authenticate,
   requireRoles('partner'),
   controller.toggleRoomActive
+);
+
+// Partner reads availability for a date range (calendar view)
+router.get(
+  '/:homestayId/availability',
+  authenticate,
+  requireRoles('partner'),
+  controller.getAvailability
+);
+
+const blockAvailabilitySchema = z.object({
+  startDate: z.string().regex(dateRegex, 'startDate must be YYYY-MM-DD'),
+  endDate:   z.string().regex(dateRegex, 'endDate must be YYYY-MM-DD'),
+  roomIds:   z.array(z.string().uuid()).optional(),
+  isBlocked: z.boolean(),
+});
+
+// Partner blocks or unblocks a date range across rooms
+router.patch(
+  '/:homestayId/availability/block',
+  authenticate,
+  requireRoles('partner'),
+  validate(blockAvailabilitySchema),
+  controller.blockAvailability
 );
 
 const addRoomImagesSchema = z.object({

@@ -225,6 +225,25 @@ export const serviceService = {
     return handleResponse(res);
   },
 
+  // GET /api/partner/homestays/:id/availability?startDate=&endDate=
+  async getHomestayAvailability(homestayId, startDate, endDate) {
+    const params = new URLSearchParams({ startDate, endDate });
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/availability?${params}`, {
+      headers: { ...authHeaders() },
+    });
+    return handleResponse(res);
+  },
+
+  // PATCH /api/partner/homestays/:id/availability/block
+  async blockHomestayAvailability(homestayId, data) {
+    const res = await fetch(`${BASE_URL}/api/partner/homestays/${homestayId}/availability/block`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
   // POST /api/services/partner/services/:serviceId/submit (draft → pending)
   async submitCarRentalService(serviceId) {
     const res = await fetch(`${BASE_URL}/api/services/partner/services/${serviceId}/submit`, {
